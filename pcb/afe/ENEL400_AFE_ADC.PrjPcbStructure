@@ -1,0 +1,4 @@
+Record=TopLevelDocument|FileName=TopLevelProcessor400.SchDoc|SheetNumber=1
+Record=SheetSymbol|SourceDocument=TopLevelProcessor400.SchDoc|Designator=U_ADC|SchDesignator=U_ADC|FileName=ADC.SchDoc|SheetNumber=4|SymbolType=Normal|RawFileName=ADC.SchDoc|DesignItemId= |SourceLibraryName= |ObjectKind=Sheet Symbol|RevisionGUID= |ItemGUID= |VaultGUID= 
+Record=SheetSymbol|SourceDocument=TopLevelProcessor400.SchDoc|Designator=U_circuitProtection|SchDesignator=U_circuitProtection|FileName=circuitProtection.SchDoc|SheetNumber=2|SymbolType=Normal|RawFileName=circuitProtection.SchDoc|DesignItemId= |SourceLibraryName= |ObjectKind=Sheet Symbol|RevisionGUID= |ItemGUID= |VaultGUID= 
+Record=SheetSymbol|SourceDocument=TopLevelProcessor400.SchDoc|Designator=U_VS|SchDesignator=U_VS|FileName=VoltageScaling.SchDoc|SheetNumber=3|SymbolType=Normal|RawFileName=VoltageScaling.SchDoc|DesignItemId= |SourceLibraryName= |ObjectKind=Sheet Symbol|RevisionGUID= |ItemGUID= |VaultGUID= 
