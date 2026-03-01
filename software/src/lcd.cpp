@@ -98,23 +98,24 @@ void drawGridLines() {
     
 }
 
-void printVoltDiv(float timeDiv) {
+void printVoltDiv(float voltDiv) {
 
     tft.fillRect(3, 3, 110, 45, TFT_CHARCOAL);
 
-    snprintf(timeDivStr, sizeof(timeDivStr), "%.3f V/div", timeDiv);
+    snprintf(voltDivStr, sizeof(voltDivStr), "%d V/div", voltDiv);
     tft.setCursor(20, 20, 2);
-    tft.print(timeDivStr);
+    tft.print(voltDivStr);
 
 }
 
-void printTimeDiv(float voltDiv) {
+void printTimeDiv(float timeDiv) {
 
     tft.fillRect(115, 3, 110, 45, TFT_CHARCOAL);
 
-    snprintf(voltDivStr, sizeof(voltDivStr), "%.3f ms/div", voltDiv);
+    if (timeDiv >= 1) snprintf(timeDivStr, sizeof(timeDivStr), "%d ms/div", timeDiv);
+    else snprintf(timeDivStr, sizeof(timeDivStr), "%e ms/div", timeDiv);
     tft.setCursor(120, 20, 2);
-    tft.print(voltDivStr);
+    tft.print(timeDivStr);
 }
 
 void printFreqPer(float freq, float per) {
@@ -141,7 +142,7 @@ void printDutyPk(float duty, float pk) {
 
     tft.fillRect(248, 3, 229, 45, TFT_CHARCOAL);
 
-    snprintf(dutyPkStr, sizeof(dutyPkStr), "Duty cycle: %.3f%   Pk - Pk: %.3fV", duty, pk);
+    snprintf(dutyPkStr, sizeof(dutyPkStr), "Duty cycle: %.3f%%   Pk-Pk: %.3fV", duty, pk);
     tft.setCursor(250, 25, 1);
     tft.print(dutyPkStr);
 
