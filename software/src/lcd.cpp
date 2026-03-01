@@ -11,7 +11,7 @@ uint16_t centerY = SCREEN_HEIGHT / 2;
 
 uint16_t gridHorizontal = HEADER_HEIGHT + (WINDOW_HEIGHT / 2);
 
-char voltDivStr[50];
+char voltDivStr[100];
 char timeDivStr[100];
 char freqPerStr[100];
 char maxMinStr[100];
@@ -28,7 +28,7 @@ void lcdInit() {
     drawGrid();
 
     printVoltDiv(5);
-    printTimeDiv(20);
+    printTimeDiv(500);
 
     printFreqPer(60, (1/(float)60));
 
@@ -102,7 +102,7 @@ void printVoltDiv(float voltDiv) {
 
     tft.fillRect(3, 3, 110, 45, TFT_CHARCOAL);
 
-    snprintf(voltDivStr, sizeof(voltDivStr), "%d V/div", voltDiv);
+    snprintf(voltDivStr, sizeof(voltDivStr), "%.3f V/div", voltDiv);
     tft.setCursor(20, 20, 2);
     tft.print(voltDivStr);
 
@@ -112,8 +112,7 @@ void printTimeDiv(float timeDiv) {
 
     tft.fillRect(115, 3, 110, 45, TFT_CHARCOAL);
 
-    if (timeDiv >= 1) snprintf(timeDivStr, sizeof(timeDivStr), "%d ms/div", timeDiv);
-    else snprintf(timeDivStr, sizeof(timeDivStr), "%e ms/div", timeDiv);
+    snprintf(timeDivStr, sizeof(timeDivStr), "%.3f ms/div", timeDiv);
     tft.setCursor(120, 20, 2);
     tft.print(timeDivStr);
 }

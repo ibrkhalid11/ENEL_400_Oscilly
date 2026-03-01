@@ -5,14 +5,16 @@
 
 uint8_t measurement = 0;
 uint8_t voltDivIndex = 0;
+uint8_t timeDivIndex = 0;
 float voltDivModes[] = {5, 1, 0.5, 0.1};
+float timeDivModes[] = {500, 100, 50, 10, 5, 1, 0.5, 0.1, 0.05, 0.01, 0.005, 0.001};
 
 
 void taskCreate() {
     xTaskCreate(
         encoderVoltTask,
         "encoderVoltTask",
-        1000,
+        10000,
         NULL,
         1,
         NULL
@@ -21,7 +23,7 @@ void taskCreate() {
     xTaskCreate(
         encoderTimeTask,
         "encoderTimeTask",
-        1000,
+        10000,
         NULL,
         1,
         NULL
@@ -30,7 +32,7 @@ void taskCreate() {
     xTaskCreate(
         encoderMeasTask,
         "encoderMeasTask",
-        1000,
+        10000,
         NULL,
         1,
         NULL
@@ -65,11 +67,15 @@ void encoderTimeTask(void * parameters) {
         if(encoderTimeFlag) {
             if (millis() - encoderTimeTime >= DEBOUNCE_TIME) {
 
-                if (s2StateTime) countTime++;
-                else countTime--;
+                if (s2StateTime) {
+                    if (timeDivIndex >= 11);
+                    else timeDivIndex++;
+                } else {
+                    if (timeDivIndex <= 0);
+                    else timeDivIndex--;
+                }
 
-                Serial.print("Time encoder count: ");
-                Serial.println(countTime);
+                printTimeDiv(timeDivModes[timeDivIndex]);
 
                 encoderTimeFlag = 0;
             }
