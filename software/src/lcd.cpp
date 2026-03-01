@@ -12,12 +12,13 @@ uint16_t centerY = SCREEN_HEIGHT / 2;
 uint16_t gridHorizontal = HEADER_HEIGHT + (WINDOW_HEIGHT / 2);
 
 char voltDivStr[50];
-char timeDivStr[50];
-char freqPerStr[50];
-char maxMinStr[50];
-char dutyPkStr[50];
+char timeDivStr[100];
+char freqPerStr[100];
+char maxMinStr[100];
+char dutyPkStr[100];
 
 void lcdInit() {
+    
     tft.init();
     tft.setRotation(1);
     tft.setTextColor(TFT_WHITE);
@@ -47,6 +48,7 @@ void drawGrid() {
 }
 
 void drawBorders() {
+
     tft.drawWideLine(0, HEADER_HEIGHT, SCREEN_WIDTH, HEADER_HEIGHT, 2, TFT_WHITE, TFT_WHITE); // top
     tft.drawWideLine(0, HEADER_HEIGHT, 0, SCREEN_HEIGHT, 2, TFT_WHITE, TFT_WHITE); // left
     tft.drawWideLine(SCREEN_WIDTH, HEADER_HEIGHT, SCREEN_WIDTH, SCREEN_HEIGHT, 2, TFT_WHITE, TFT_WHITE); // right 
@@ -55,6 +57,7 @@ void drawBorders() {
 }
 
 void drawHeader() {
+
     tft.fillRect(0, 0, SCREEN_WIDTH, HEADER_HEIGHT, TFT_CHARCOAL);
 
     tft.drawWideLine(0, 0, SCREEN_WIDTH, 0, 2, TFT_WHITE, TFT_WHITE); // top
@@ -96,6 +99,7 @@ void drawGridLines() {
 }
 
 void printVoltDiv(float timeDiv) {
+
     tft.fillRect(3, 3, 110, 45, TFT_CHARCOAL);
 
     snprintf(timeDivStr, sizeof(timeDivStr), "%.3f V/div", timeDiv);
@@ -105,6 +109,7 @@ void printVoltDiv(float timeDiv) {
 }
 
 void printTimeDiv(float voltDiv) {
+
     tft.fillRect(115, 3, 110, 45, TFT_CHARCOAL);
 
     snprintf(voltDivStr, sizeof(voltDivStr), "%.3f ms/div", voltDiv);
@@ -114,6 +119,8 @@ void printTimeDiv(float voltDiv) {
 
 void printFreqPer(float freq, float per) {
 
+    tft.fillRect(248, 3, 229, 45, TFT_CHARCOAL);
+
     snprintf(freqPerStr, sizeof(freqPerStr), "Frequency: %.3fHz   Period: %.3fs", freq, per);
     tft.setCursor(250, 25, 1);
     tft.print(freqPerStr);
@@ -122,6 +129,8 @@ void printFreqPer(float freq, float per) {
 
 void printMaxMin(float max, float min) {
 
+    tft.fillRect(248, 3, 229, 45, TFT_CHARCOAL);
+
     snprintf(maxMinStr, sizeof(maxMinStr), "Vmax: %.3fV   Vmin: %.3fV", max, min);
     tft.setCursor(250, 25, 1);
     tft.print(maxMinStr);
@@ -129,6 +138,8 @@ void printMaxMin(float max, float min) {
 }
 
 void printDutyPk(float duty, float pk) {
+
+    tft.fillRect(248, 3, 229, 45, TFT_CHARCOAL);
 
     snprintf(dutyPkStr, sizeof(dutyPkStr), "Duty cycle: %.3f%   Pk - Pk: %.3fV", duty, pk);
     tft.setCursor(250, 25, 1);
