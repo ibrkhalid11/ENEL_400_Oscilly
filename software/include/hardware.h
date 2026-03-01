@@ -21,27 +21,35 @@ void pinInit();
 
 // interrupts
 
-void buttonPressVolt(void);
-void buttonPressTime(void);
-void buttonPressMeas(void);
-void encoderVolt(void);
-void encoderTime(void);
-void encoderMeas(void);
+void btnVoltISR(void);
+void btnTimeISR(void);
+void btnMeasISR(void);
+void enVoltISR(void);
+void enTimeISR(void);
+void enMeasISR(void);
 
-extern uint8_t encoderVoltFlag;
-extern uint8_t encoderTimeFlag;
-extern uint8_t encoderMeasFlag;
+// extern uint8_t encoderVoltFlag;
+// extern uint8_t encoderTimeFlag;
+// extern uint8_t encoderMeasFlag;
 
-extern uint32_t encoderVoltTime;
-extern uint32_t encoderTimeTime;
-extern uint32_t encoderMeasTime;
+// extern uint32_t encoderVoltTime;
+// extern uint32_t encoderTimeTime;
+// extern uint32_t encoderMeasTime;
 
-extern int8_t countVolt;
-extern int8_t countTime;
-extern int8_t countMeas;
+// extern int8_t s2StateVolt;
+// extern int8_t s2StateTime;
+// extern int8_t s2StateMeas;
 
-extern int8_t s2StateVolt;
-extern int8_t s2StateTime;
-extern int8_t s2StateMeas;
+typedef struct {
+    uint8_t enFlag;
+    uint8_t btnFlag;
+    uint8_t s2State;
+    uint32_t timestamp;
+
+} encoder;
+
+extern encoder voltEn;
+extern encoder timeEn;
+extern encoder measEn;
 
 #endif

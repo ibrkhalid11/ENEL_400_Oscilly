@@ -41,10 +41,10 @@ void taskCreate() {
 
 void encoderVoltTask(void * parameters) {
     while(1) {
-        if(encoderVoltFlag) {
-            if (millis() - encoderVoltTime >= DEBOUNCE_TIME) {
+        if(voltEn.enFlag) {
+            if (millis() - voltEn.timestamp >= DEBOUNCE_TIME) {
 
-                if (s2StateVolt) {
+                if (voltEn.s2State) {
                     if (voltDivIndex >= 3);
                     else voltDivIndex++;
                 } else {
@@ -54,7 +54,7 @@ void encoderVoltTask(void * parameters) {
 
                 printVoltDiv(voltDivModes[voltDivIndex]);
 
-                encoderVoltFlag = 0;
+                voltEn.enFlag = 0;
             }
         }
 
@@ -64,10 +64,10 @@ void encoderVoltTask(void * parameters) {
 
 void encoderTimeTask(void * parameters) {
     while(1) {
-        if(encoderTimeFlag) {
-            if (millis() - encoderTimeTime >= DEBOUNCE_TIME) {
+        if(timeEn.enFlag) {
+            if (millis() - timeEn.timestamp >= DEBOUNCE_TIME) {
 
-                if (s2StateTime) {
+                if (timeEn.s2State) {
                     if (timeDivIndex >= 11);
                     else timeDivIndex++;
                 } else {
@@ -77,7 +77,7 @@ void encoderTimeTask(void * parameters) {
 
                 printTimeDiv(timeDivModes[timeDivIndex]);
 
-                encoderTimeFlag = 0;
+                timeEn.enFlag = 0;
             }
         }
 
@@ -87,10 +87,10 @@ void encoderTimeTask(void * parameters) {
 
 void encoderMeasTask(void * parameters) {
     while(1) {
-        if(encoderMeasFlag) {
-            if (millis() - encoderMeasTime >= DEBOUNCE_TIME) {
+        if(measEn.enFlag) {
+            if (millis() - measEn.timestamp >= DEBOUNCE_TIME) {
 
-                if (s2StateMeas) {
+                if (measEn.s2State) {
                     if (measurement >= 2) measurement = 0;
                     else measurement++;
                 } else {
@@ -102,7 +102,7 @@ void encoderMeasTask(void * parameters) {
                 else if (measurement == 1) printMaxMin(5, -5);
                 else if (measurement == 2) printDutyPk(80, 10);
 
-                encoderMeasFlag = 0;
+                measEn.enFlag = 0;
             }
         }
 
