@@ -2,7 +2,9 @@
 module toplevelMVP(
     input logic clk,
     input logic reset,
-
+    /* UART pins */
+    input logic rx,
+    output logic tx,
     /* XADC Pins for AC secition */
     input vauxp15,
     input vauxn15,
@@ -22,6 +24,14 @@ module toplevelMVP(
     logic [15:0] bcd_out;
     logic valid_sar;
     logic ready_r_out;
+
+    /* uart wires */
+    logic [7:0] tx_data;
+    logic       tx_start;
+    logic       tx_busy;
+    logic [7:0] rx_data;
+    logic       rx_valid;
+    logic       synch_rx;
     /*bring in all xadc signals needed */
 
 
@@ -34,14 +44,52 @@ module toplevelMVP(
         .in(pwm_comp),
         .out(synchpwm_comp)
     );
-
+    synchro synch_uart_rx (
+        .clk(clk),
+        .reset(reset),
+        .in(rx), 
+        .out(synch_rx)
+    );
     /* synch all buttons */
     /* synch all switches */
 
     /* correct all inputs if needed */
 
+
+    /* UART comms instants */
+
+    // Transmit controller
+    uart_send_16 UART_CTRL (
+        .clk(clk),
+        .rst(reset),
+        .data_in(signal_select_out),   // 16-bit ADC result
+        .data_valid(ready_r_out),      // fires when recorder has new sample
+        .tx_data(tx_data),
+        .tx_start(tx_start),
+        .tx_busy(tx_busy)
+    );
+
+    // UART TX
+    uart_tx #(.BAUD_DIV(868)) UART_TX_INST (
+        .clk(clk),
+        .rst(reset),
+        .tx_data(tx_data),
+        .tx_start(tx_start),
+        .tx(tx),
+        .tx_busy(tx_busy)
+    );
+
+    // UART RX (optional, if you need to receive commands)
+    uart_rx #(.BAUD_DIV(868)) UART_RX_INST (
+        .clk(clk),
+        .rst(reset),
+        .rx(synch_rx),
+        .rx_data(rx_data),
+        .rx_valid(rx_valid)
+    );
+    
     /* ======== DC PATH ======= */
-    /* sar instantiation */
+        /* sar instantiation */
     sar #(.WIDTH(8)) DC_ADC(
         .clk(clk),
         .reset(reset),
@@ -50,7 +98,7 @@ module toplevelMVP(
         .R2R_out(duty_cycle_test),
         .valid(valid_sar)
     );
-    /* sar pwm instantiation */
+        /* sar pwm instantiation */
     pwm #(.WIDTH(8)) SAR_PWM (
         .clk(clk),
         .reset(reset),
@@ -58,7 +106,7 @@ module toplevelMVP(
         .duty_cycle(duty_cycle_test),
         .pwm_out(dc_pwm_out)
     );
-    /* DC recorder instant */
+        /* DC recorder instant */
     recorder SAR_RECORDER (
         .clk(clk),
         .reset(reset),
@@ -67,7 +115,7 @@ module toplevelMVP(
         .duty_cycle_out(raw_adc),
         .ready_r_out(ready_r_out)
     );
-    /* DC processing instant */
+        /* DC processing instant */
     adc_processing #(.SCALING_FACTOR(825), .SHIFT_FACTOR(14)) DC_PROC (
         .clk(clk),
         .reset(reset),
@@ -76,12 +124,14 @@ module toplevelMVP(
         .averaged_data(averaged_data),
         .scaled_adc_data(scaled_data)
     );
+    
     mux21 #(.WIDTH(16)) SIGNAL_SEL (
         .select(1'b0),          // or a switch if you want to toggle
         .d0(scaled_data),
         .d1(averaged_data),
         .y(signal_select_out)
     );
+    
     /* bin_to_bcd instant */
     bin_to_bcd BIN2BCD (
         .clk(clk),
