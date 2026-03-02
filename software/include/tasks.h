@@ -8,5 +8,7 @@ void taskCreate();
 void encoderVoltTask(void * parameters);
 void encoderTimeTask(void * parameters);
 void encoderMeasTask(void * parameters);
+void uartTask (void * parameters);
+void voltageUpdateTask(void * parameters);
 
 #endif

@@ -19,5 +19,6 @@ void printTimeDiv(float timeDiv);
 void printFreqPer(float freq, float per);
 void printMaxMin(float max, float min);
 void printDutyPk(float duty, float pk);
+void printVoltage(float voltage);
 
 #endif
