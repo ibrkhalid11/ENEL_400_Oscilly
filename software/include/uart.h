@@ -1,11 +1,11 @@
 #ifndef UARTT_HEAD
 #define UART_HEAD
 
-float uartReceive(void);
+uint16_t uartReceive(void);
 
 typedef union {
-    float receivedFloat;
-    uint8_t byteArray[4];
+    uint16_t receivedFloat;
+    uint8_t byteArray[2];
 } uartUnion;
 
 

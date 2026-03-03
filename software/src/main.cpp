@@ -169,12 +169,15 @@ void uartTask (void * parameters) {
 
     while(1) {
         if (fpga.available() >= 4) {
-            float receivedFloat;
-            receivedFloat = uartReceive();
-    
-            Serial.println(receivedFloat, 5);
+            uint16_t receivedVoltage;
+            float scaledVoltage;
 
-            if (xQueueSend(uartQueue, &receivedFloat, 0) != pdTRUE);
+            receivedVoltage = uartReceive();
+            scaledVoltage = (float)receivedVoltage / 1000;
+    
+            Serial.println(scaledVoltage, 5);
+
+            if (xQueueSend(uartQueue, &scaledVoltage, 0) != pdTRUE);
         }
 
         vTaskDelay(pdMS_TO_TICKS(100));
@@ -199,10 +202,10 @@ void voltageUpdateTask(void * parameters) {
     }
 }
 
-float uartReceive(void) {
+uint16_t uartReceive(void) {
 
     uartUnion receivedBytes;
-    fpga.readBytes(receivedBytes.byteArray, 4);
+    fpga.readBytes(receivedBytes.byteArray, 2);
 
     return receivedBytes.receivedFloat;
 
