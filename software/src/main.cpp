@@ -181,7 +181,7 @@ void uartTask (void * parameters) {
             float scaledVoltage;
 
             receivedVoltage = uartReceive();
-            scaledVoltage = (float)receivedVoltage / 1000;
+            scaledVoltage = (((float)receivedVoltage / 1000) - 0.95) * 15;
     
             // Serial.println(scaledVoltage, 5);
 
@@ -198,7 +198,7 @@ void voltageUpdateTask(void * parameters) {
             float receivedFloat = 0;
             if (xQueueReceive(uartQueue, &receivedFloat, 0) == pdPASS) {
 
-                printVoltage(receivedFloat);
+                printVoltage(receivedFloat, voltDivModes[voltDivIndex]);
 
             }
 
@@ -212,9 +212,13 @@ void voltageUpdateTask(void * parameters) {
 
 uint16_t uartReceive(void) {
 
-    uartUnion receivedBytes;
-    fpga.readBytes(receivedBytes.byteArray, 2);
+    uint8_t receivedBytes[2];
+    uartUnion reversedBytes;
 
-    return receivedBytes.receivedFloat;
+    fpga.readBytes(receivedBytes, 2);
+    reversedBytes.byteArray[0] = receivedBytes[1];
+    reversedBytes.byteArray[1] = receivedBytes[0];
+
+    return reversedBytes.receivedFloat;
 
 }

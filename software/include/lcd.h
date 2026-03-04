@@ -5,8 +5,8 @@
 #define SCREEN_HEIGHT 319
 #define WINDOW_HEIGHT 270
 #define HEADER_HEIGHT 49
-#define DIV_SIZE 35
-#define MINI_DIV_SIZE 7
+#define DIV_SIZE 30
+#define MINI_DIV_SIZE 6
 #define GRID_COLOUR TFT_LIGHTGREY
 
 void lcdInit();
@@ -19,6 +19,6 @@ void printTimeDiv(float timeDiv);
 void printFreqPer(float freq, float per);
 void printMaxMin(float max, float min);
 void printDutyPk(float duty, float pk);
-void printVoltage(float voltage);
+void printVoltage(float voltage, float voltScale = 0);
 
 #endif

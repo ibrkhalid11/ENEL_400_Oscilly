@@ -155,15 +155,25 @@ void printDutyPk(float duty, float pk) {
 
 }
 
-void printVoltage(float voltage) {
+void printVoltage(float voltage, float voltScale) {
 
-    // drawGrid();
+    drawGrid();
 
-    snprintf(voltageStr, sizeof(voltageStr), "%.3fV", voltage);
+    if (voltScale == 1) {
+        
+        drawGrid();
+        tft.drawWideLine(0, gridHorizontal - (voltage * 30), SCREEN_WIDTH, gridHorizontal - (voltage * 30), 3, TFT_YELLOW, TFT_YELLOW);
+        drawBorders();
 
-    tft.setTextColor(TFT_BLACK, TFT_WHITE);
+    } else {
 
-    tft.setCursor(centerX - 40, gridHorizontal - 16, 4);
-    tft.fillRect(centerX - 45, gridHorizontal - 20, 120, 35, TFT_WHITE);
-    tft.print(voltageStr);
+        snprintf(voltageStr, sizeof(voltageStr), "%.3fV", voltage);
+
+        tft.setTextColor(TFT_BLACK, TFT_WHITE);
+
+        tft.setCursor(centerX - 40, gridHorizontal - 16, 4);
+        tft.fillRect(centerX - 45, gridHorizontal - 20, 120, 35, TFT_WHITE);
+        tft.print(voltageStr);
+
+    }
 }
