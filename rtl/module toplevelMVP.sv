@@ -33,11 +33,39 @@ module toplevelMVP(
     logic       rx_valid;
     logic       synch_rx;
     /*bring in all xadc signals needed */
-
+    logic       ready_ac;
+    logic[15:0] data;
+    logic       ac_enable;
+    //logic[4:0] channel_out;
+    //logic     eoc_out;
+    logic[6:0]  daddr_in;
+    logic       eos_out;
+    logic       busy_out;
+    
 
 
     /* synchronize all pin inputs */
     logic synchpwm_comp;
+    xadc_wiz_0 ACADC (
+        .di_in(16'h0000),        // Not used for reading
+        .daddr_in(CHANNEL_ADDR), // Channel address
+        .den_in(enable),         // Enable signal
+        .dwe_in(1'b0),           // Not writing, so set to 0
+        .drdy_out(ac_ready),        // Data ready signal (when high, ADC data is valid)
+        .do_out(data),           // ADC data output
+        .dclk_in(clk),           // Use system clock
+        .reset_in(reset),   // Active-high reset
+        .vp_in(1'b0),            // Not used, leave disconnected
+        .vn_in(1'b0),            // Not used, leave disconnected
+        .vauxp15(vauxp15),       // Auxiliary analog input (positive)
+        .vauxn15(vauxn15),       // Auxiliary analog input (negative)
+        .channel_out(),          // Current channel being converted
+        .eoc_out(enable),        // End of conversion
+        .alarm_out(),            // Not used
+        .eos_out(eos_out),       // End of sequence
+        .busy_out(busy_out)      // XADC busy signal
+    );
+    
     synchro synchpwmcomp(
         .clk(clk),
         .reset(reset),
@@ -158,5 +186,6 @@ module toplevelMVP(
         .CE(CE), .CF(CF), .CG(CG), .DP(DP),
         .AN1(AN1), .AN2(AN2), .AN3(AN3), .AN4(AN4)
     );
+    
 
 endmodule
