@@ -13,6 +13,7 @@ float timeDivModes[] = {500, 100, 50, 10, 5, 1, 0.5, 0.1, 0.05, 0.01, 0.005, 0.0
 QueueHandle_t uartQueue;
 SemaphoreHandle_t displayMutex;
 
+char uartBuffer[64];
 HardwareSerial fpga(2);
 
 void setup() {
@@ -168,14 +169,21 @@ void encoderMeasTask(void * parameters) {
 void uartTask (void * parameters) {
 
     while(1) {
-        if (fpga.available() >= 4) {
+        fpga.readBytes(uartBuffer, 64);
+        digitalWrite(22, 1);
+        vTaskDelay(pdMS_TO_TICKS(5));
+        digitalWrite(22, 0);
+
+        if (fpga.available() >= 2) {
+            // fpga.readBytes(uartBuffer, 64);
+            // vTaskDelay(pdMS_TO_TICKS(2));
             uint16_t receivedVoltage;
             float scaledVoltage;
 
             receivedVoltage = uartReceive();
             scaledVoltage = (float)receivedVoltage / 1000;
     
-            Serial.println(scaledVoltage, 5);
+            // Serial.println(scaledVoltage, 5);
 
             if (xQueueSend(uartQueue, &scaledVoltage, 0) != pdTRUE);
         }

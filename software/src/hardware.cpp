@@ -19,6 +19,9 @@ void pinInit() {
     pinMode(S2_MEAS, 1);
     pinMode(KEY_MEAS, 1);
 
+    pinMode(22, OUTPUT);
+    digitalWrite(22, 0);
+
     // attachInterrupt(KEY_VOLT, buttonPressVolt, FALLING);
     // attachInterrupt(KEY_TIME, buttonPressTime, FALLING);
     // attachInterrupt(KEY_MEAS, buttonPressMeas, FALLING);

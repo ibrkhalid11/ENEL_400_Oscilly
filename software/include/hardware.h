@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-#define DEBOUNCE_TIME 50
+#define DEBOUNCE_TIME 100
 
 #define KEY_VOLT 36
 #define S2_VOLT 39
