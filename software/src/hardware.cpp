@@ -1,9 +1,9 @@
 #include <Arduino.h>
 #include <hardware.h>
 
-encoder voltEn = {0, 0, 0, 0};
-encoder timeEn = {0, 0, 0, 0};
-encoder measEn = {0, 0, 0, 0};
+encoder voltEn = {0, 0, 0, 0, 0};
+encoder timeEn = {0, 0, 0, 0, 0};
+encoder measEn = {0, 0, 0, 0, 0};
 
 void pinInit() {
 
@@ -22,9 +22,9 @@ void pinInit() {
     pinMode(22, OUTPUT);
     digitalWrite(22, 0);
 
-    // attachInterrupt(KEY_VOLT, buttonPressVolt, FALLING);
-    // attachInterrupt(KEY_TIME, buttonPressTime, FALLING);
-    // attachInterrupt(KEY_MEAS, buttonPressMeas, FALLING);
+    // attachInterrupt(KEY_VOLT, btnVoltISR, FALLING);
+    // attachInterrupt(KEY_TIME, btnTimeISR, FALLING);
+    attachInterrupt(KEY_MEAS, btnMeasISR, FALLING);
 
     attachInterrupt(S1_VOLT, enVoltISR, RISING);
     attachInterrupt(S1_TIME, enTimeISR, RISING);
@@ -45,12 +45,17 @@ void IRAM_ATTR btnTimeISR(void) {
 
 void IRAM_ATTR btnMeasISR(void) {
 
+    if (!measEn.btnFlag) {
+        measEn.btnTimestamp = millis();
+        measEn.btnFlag = 1;
+    }
+
 }
 
 void IRAM_ATTR enVoltISR(void) {
 
     if (!voltEn.enFlag) {
-        voltEn.timestamp = millis();
+        voltEn.enTimestamp = millis();
         voltEn.s2State = digitalRead(S2_VOLT);
         voltEn.enFlag = 1;
     }
@@ -60,7 +65,7 @@ void IRAM_ATTR enVoltISR(void) {
 void IRAM_ATTR enTimeISR(void) {
 
     if (!timeEn.enFlag) {
-        timeEn.timestamp = millis();
+        timeEn.enTimestamp = millis();
         timeEn.s2State = digitalRead(S2_TIME);
         timeEn.enFlag = 1;
     }
@@ -70,7 +75,7 @@ void IRAM_ATTR enTimeISR(void) {
 void IRAM_ATTR enMeasISR(void) {
     
     if (!measEn.enFlag) {
-        measEn.timestamp = millis();
+        measEn.enTimestamp = millis();
         measEn.s2State = digitalRead(S2_MEAS);
         measEn.enFlag = 1;
     }

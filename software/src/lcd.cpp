@@ -33,8 +33,6 @@ void lcdInit() {
 
     printFreqPer(60, (1/(float)60));
 
-    printVoltage((float)5.318);
-
 }
 
 void drawGrid() {
@@ -155,17 +153,11 @@ void printDutyPk(float duty, float pk) {
 
 }
 
-void printVoltage(float voltage, float voltScale) {
+void printVoltage(float voltage, uint8_t voltScale, uint8_t readingMode) {
 
     drawGrid();
 
-    if (voltScale == 1) {
-        
-        drawGrid();
-        tft.drawWideLine(0, gridHorizontal - (voltage * 30), SCREEN_WIDTH, gridHorizontal - (voltage * 30), 3, TFT_YELLOW, TFT_YELLOW);
-        drawBorders();
-
-    } else {
+    if (readingMode) {
 
         snprintf(voltageStr, sizeof(voltageStr), "%.3fV", voltage);
 
@@ -175,5 +167,25 @@ void printVoltage(float voltage, float voltScale) {
         tft.fillRect(centerX - 45, gridHorizontal - 20, 120, 35, TFT_WHITE);
         tft.print(voltageStr);
 
+    } else {
+
+        uint16_t pixPerVolt = 0;
+
+        if (voltScale == 0) pixPerVolt = 6;
+        else if (voltScale == 1) pixPerVolt = 30;
+        else if (voltScale == 2) pixPerVolt = 60;
+        else if (voltScale == 3) pixPerVolt = 300;
+
+
+
+        if ((gridHorizontal - (voltage * pixPerVolt)) < HEADER_HEIGHT);
+
+        else {
+            
+            tft.drawWideLine(0, gridHorizontal - (voltage * pixPerVolt), SCREEN_WIDTH, gridHorizontal - (voltage * pixPerVolt), 3, TFT_YELLOW, TFT_YELLOW);
+            drawBorders();
+
+        }
     }
+
 }

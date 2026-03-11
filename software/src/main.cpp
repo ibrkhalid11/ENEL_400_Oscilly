@@ -4,6 +4,7 @@
 #include <tasks.h>
 #include <uart.h>
 
+uint8_t voltReadingMode = 1;
 uint8_t measurement = 0;
 uint8_t voltDivIndex = 0;
 uint8_t timeDivIndex = 0;
@@ -83,7 +84,7 @@ void taskCreate() {
 void encoderVoltTask(void * parameters) {
   while(1) {
       if(voltEn.enFlag) {
-          if (millis() - voltEn.timestamp >= DEBOUNCE_TIME) {
+          if (millis() - voltEn.enTimestamp >= DEBOUNCE_TIME) {
 
               if(xSemaphoreTake(displayMutex, 0) == pdTRUE) {
             
@@ -111,7 +112,7 @@ void encoderVoltTask(void * parameters) {
 void encoderTimeTask(void * parameters) {
   while(1) {
       if(timeEn.enFlag) {
-          if (millis() - timeEn.timestamp >= DEBOUNCE_TIME) {
+          if (millis() - timeEn.enTimestamp >= DEBOUNCE_TIME) {
 
               if(xSemaphoreTake(displayMutex, 0) == pdTRUE) {
 
@@ -132,14 +133,14 @@ void encoderTimeTask(void * parameters) {
           }
       }
 
-      vTaskDelay(pdTICKS_TO_MS(50));
+      vTaskDelay(pdTICKS_TO_MS(10));
   }
 }
 
 void encoderMeasTask(void * parameters) {
     while(1) {
         if(measEn.enFlag) {
-            if (millis() - measEn.timestamp >= DEBOUNCE_TIME) {
+            if (millis() - measEn.enTimestamp >= DEBOUNCE_TIME) {
 
                 if (xSemaphoreTake(displayMutex, 0) == pdTRUE) {
 
@@ -162,6 +163,16 @@ void encoderMeasTask(void * parameters) {
             }
         }
 
+        if(measEn.btnFlag) {
+            if (millis() - measEn.btnTimestamp >= DEBOUNCE_TIME) {
+
+                voltReadingMode = voltReadingMode ? 0 : 1;
+
+                measEn.btnFlag = 0;
+
+            }
+        }
+
         vTaskDelay(pdTICKS_TO_MS(50));
     }
 }
@@ -181,7 +192,8 @@ void uartTask (void * parameters) {
             float scaledVoltage;
 
             receivedVoltage = uartReceive();
-            scaledVoltage = (((float)receivedVoltage / 1000) - 0.95) * 15;
+            scaledVoltage = (((float)receivedVoltage / 1000) - 0.95) * 7.5;
+            // scaledVoltage = (float)receivedVoltage / 1000;
     
             // Serial.println(scaledVoltage, 5);
 
@@ -198,7 +210,7 @@ void voltageUpdateTask(void * parameters) {
             float receivedFloat = 0;
             if (xQueueReceive(uartQueue, &receivedFloat, 0) == pdPASS) {
 
-                printVoltage(receivedFloat, voltDivModes[voltDivIndex]);
+                printVoltage(receivedFloat, voltDivIndex, voltReadingMode);
 
             }
 

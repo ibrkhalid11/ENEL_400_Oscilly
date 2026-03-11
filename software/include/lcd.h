@@ -19,6 +19,6 @@ void printTimeDiv(float timeDiv);
 void printFreqPer(float freq, float per);
 void printMaxMin(float max, float min);
 void printDutyPk(float duty, float pk);
-void printVoltage(float voltage, float voltScale = 0);
+void printVoltage(float voltage, uint8_t voltScale = 0, uint8_t readingMode = 1);
 
 #endif

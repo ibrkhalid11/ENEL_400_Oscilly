@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-#define DEBOUNCE_TIME 100
+#define DEBOUNCE_TIME 75
 
 #define KEY_VOLT 36
 #define S2_VOLT 39
@@ -32,7 +32,8 @@ typedef struct {
     uint8_t enFlag;
     uint8_t btnFlag;
     uint8_t s2State;
-    uint32_t timestamp;
+    uint32_t enTimestamp;
+    uint32_t btnTimestamp;
 
 } encoder;
 
