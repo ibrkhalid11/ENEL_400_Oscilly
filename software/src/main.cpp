@@ -10,6 +10,7 @@ uint8_t voltDivIndex = 0;
 uint8_t timeDivIndex = 0;
 float voltDivModes[] = {5, 1, 0.5, 0.1};
 float timeDivModes[] = {500, 100, 50, 10, 5, 1, 0.5, 0.1, 0.05, 0.01, 0.005, 0.001};
+uint8_t waveFlag = 0;
 
 QueueHandle_t uartQueue;
 SemaphoreHandle_t displayMutex;
@@ -98,6 +99,8 @@ void encoderVoltTask(void * parameters) {
 
                   printVoltDiv(voltDivModes[voltDivIndex]);
 
+                  drawWave(voltDivIndex, waveFlag);
+
                   voltEn.enFlag = 0;
 
                   xSemaphoreGive(displayMutex);
@@ -144,19 +147,22 @@ void encoderMeasTask(void * parameters) {
 
                 if (xSemaphoreTake(displayMutex, 0) == pdTRUE) {
 
-                    if (measEn.s2State) {
-                        if (measurement >= 2) measurement = 0;
-                        else measurement++;
-                    } else {
-                        if (measurement <= 0) measurement = 2;
-                        else measurement--;
-                    }
+                    // if (measEn.s2State) {
+                    //     if (measurement >= 2) measurement = 0;
+                    //     else measurement++;
+                    // } else {
+                    //     if (measurement <= 0) measurement = 2;
+                    //     else measurement--;
+                    // }
 
-                    if (measurement == 0) printFreqPer(60, (1/(float)60));
-                    else if (measurement == 1) printMaxMin(5, -5);
-                    else if (measurement == 2) printDutyPk(80, 10);
+                    // if (measurement == 0) printFreqPer(60, (1/(float)60));
+                    // else if (measurement == 1) printMaxMin(5, -5);
+                    // else if (measurement == 2) printDutyPk(80, 10);
 
                     measEn.enFlag = 0;
+
+                    drawWave(voltDivIndex, waveFlag);
+                    waveFlag = waveFlag ? 0 : 1;
 
                     xSemaphoreGive(displayMutex);
                 }
