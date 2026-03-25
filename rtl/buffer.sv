@@ -11,7 +11,7 @@
 */
 module ram_buffer #(
     parameter int WIDTH = 16,
-    parameter int DEPTH = 200,
+    parameter int DEPTH = 480,
     parameter int DEPTH_ADDR = $clog2(DEPTH)
 )(
     input logic clk,
