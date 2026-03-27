@@ -19,8 +19,10 @@ void pinInit() {
     pinMode(S2_MEAS, 1);
     pinMode(KEY_MEAS, 1);
 
-    pinMode(22, OUTPUT);
-    digitalWrite(22, 0);
+    pinMode(MCU_READY, OUTPUT);
+    digitalWrite(MCU_READY, 1);
+
+    pinMode(FPGA_READY, INPUT);
 
     // attachInterrupt(KEY_VOLT, btnVoltISR, FALLING);
     // attachInterrupt(KEY_TIME, btnTimeISR, FALLING);
@@ -29,7 +31,8 @@ void pinInit() {
     attachInterrupt(S1_VOLT, enVoltISR, RISING);
     attachInterrupt(S1_TIME, enTimeISR, RISING);
     attachInterrupt(S1_MEAS, enMeasISR, RISING);
-
+    
+    attachInterrupt(FPGA_READY, fpgaReadyISR, FALLING);
     
 }
 
@@ -45,10 +48,10 @@ void IRAM_ATTR btnTimeISR(void) {
 
 void IRAM_ATTR btnMeasISR(void) {
 
-    if (!measEn.btnFlag) {
-        measEn.btnTimestamp = millis();
-        measEn.btnFlag = 1;
-    }
+    // if (!measEn.btnFlag) {
+    //     measEn.btnTimestamp = millis();
+    //     measEn.btnFlag = 1;
+    // }
 
 }
 
@@ -80,4 +83,8 @@ void IRAM_ATTR enMeasISR(void) {
         measEn.enFlag = 1;
     }
 
+}
+
+void IRAM_ATTR fpgaReadyISR(void) {
+    digitalWrite(MCU_READY, 0);
 }

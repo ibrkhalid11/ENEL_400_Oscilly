@@ -5,6 +5,9 @@
 
 #define DEBOUNCE_TIME 75
 
+#define MCU_READY 22
+#define FPGA_READY 21
+
 #define KEY_VOLT 36
 #define S2_VOLT 39
 #define S1_VOLT 34
@@ -27,6 +30,7 @@ void btnMeasISR(void);
 void enVoltISR(void);
 void enTimeISR(void);
 void enMeasISR(void);
+void fpgaReadyISR(void);
 
 typedef struct {
     uint8_t enFlag;

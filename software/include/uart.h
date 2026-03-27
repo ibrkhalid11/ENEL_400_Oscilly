@@ -1,12 +1,14 @@
 #ifndef UARTT_HEAD
 #define UART_HEAD
 
-uint16_t uartReceive(void);
+typedef union {
+    uint16_t measurement;
+    uint8_t receivedArray[2];
+} measurementUnion;
 
 typedef union {
-    uint16_t receivedFloat;
-    uint8_t byteArray[2];
-} uartUnion;
-
+    uint16_t voltData[480];
+    uint8_t receivedArray[960];
+} voltageUnion;
 
 #endif

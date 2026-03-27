@@ -3,6 +3,7 @@
 #include <TFT_eSPI.h>
 #include <lcd.h>
 #include <printf.h>
+#include <logo.h>
 
 TFT_eSPI tft = TFT_eSPI();
 
@@ -25,6 +26,11 @@ void lcdInit() {
     tft.init();
     tft.setRotation(1);
     tft.setTextColor(TFT_WHITE);
+
+    tft.fillScreen(TFT_WHITE);
+    tft.drawBitmap(0, 0, bitmap, 480, 320, TFT_BLACK);
+
+    delay(2000);
 
 
     drawHeader();
@@ -155,45 +161,7 @@ void printDutyPk(float duty, float pk) {
 
 }
 
-void printVoltage(float voltage, uint8_t voltScale, uint8_t readingMode) {
-
-    drawGrid();
-
-    if (readingMode) {
-
-        snprintf(voltageStr, sizeof(voltageStr), "%.3fV", voltage);
-
-        tft.setTextColor(TFT_BLACK, TFT_WHITE);
-
-        tft.setCursor(centerX - 40, gridHorizontal - 16, 4);
-        tft.fillRect(centerX - 45, gridHorizontal - 20, 120, 35, TFT_WHITE);
-        tft.print(voltageStr);
-
-    } else {
-
-        uint16_t pixPerVolt = 0;
-
-        if (voltScale == 0) pixPerVolt = 6;
-        else if (voltScale == 1) pixPerVolt = 30;
-        else if (voltScale == 2) pixPerVolt = 60;
-        else if (voltScale == 3) pixPerVolt = 300;
-
-
-
-        if ((gridHorizontal - (voltage * pixPerVolt)) < HEADER_HEIGHT);
-
-        else {
-            
-            tft.drawWideLine(0, gridHorizontal - (voltage * pixPerVolt), SCREEN_WIDTH, gridHorizontal - (voltage * pixPerVolt), 3, TFT_YELLOW, TFT_YELLOW);
-            drawBorders();
-
-        }
-    }
-
-}
-
-
-void drawWave(uint8_t voltScale, uint8_t waveMode) {
+void drawWave(uint8_t voltScale, uint16_t * voltData) {
     drawGrid();
     uint16_t pixPerVolt = 0;
 
@@ -202,35 +170,24 @@ void drawWave(uint8_t voltScale, uint8_t waveMode) {
     else if (voltScale == 2) pixPerVolt = 60;
     else if (voltScale == 3) pixPerVolt = 300;
 
-    if (waveMode) {
-        for (int i = 0; i < 480; i++) {
-            if (i > 0) {
+    for (uint16_t i = 0; i < 480; i++) {
+        if (i > 0) {
 
-                float y = gridHorizontal - 2 * (sinVals[i] * pixPerVolt);
-                float lastY = gridHorizontal - 2 * (sinVals[i - 1] * pixPerVolt);
+            float y = gridHorizontal - (convertVoltage(voltData[i]) * pixPerVolt);
+            float lastY = gridHorizontal - (convertVoltage(voltData[i - 1]) * pixPerVolt);
 
-                if ((y > HEADER_HEIGHT) && (lastY > HEADER_HEIGHT)) tft.drawWideLine(i - 1, lastY, i, y, 3, TFT_YELLOW, TFT_YELLOW);
+            if ((y > HEADER_HEIGHT) && (lastY > HEADER_HEIGHT)) tft.drawWideLine(i - 1, lastY, i, y, 3, TFT_YELLOW, TFT_YELLOW);
 
-            } else {
-                float y = gridHorizontal - 2 * (sinVals[i] * pixPerVolt);
-                if ((y > HEADER_HEIGHT) && (y < SCREEN_HEIGHT)) tft.drawSpot(i, y, 1, TFT_YELLOW, TFT_YELLOW);
-            }
-        }
-    } else {
-        for (int i = 0; i < 480; i++) {
-            if (i > 0) {
-
-                float y = gridHorizontal - 2 * (cosVals[i] * pixPerVolt);
-                float lastY = gridHorizontal - 2 * (cosVals[i - 1] * pixPerVolt);
-
-                if ((y > HEADER_HEIGHT) && (lastY > HEADER_HEIGHT)) tft.drawWideLine(i - 1, lastY, i, y, 3, TFT_YELLOW, TFT_YELLOW);
-
-            } else {
-                float y = gridHorizontal - 2 * (cosVals[i] * pixPerVolt);
-                if ((y > HEADER_HEIGHT) && (y < SCREEN_HEIGHT)) tft.drawSpot(i, y, 1, TFT_YELLOW, TFT_YELLOW);
-            }
+        } else {
+            float y = gridHorizontal - (convertVoltage(voltData[i]) * pixPerVolt);
+            if ((y > HEADER_HEIGHT) && (y < SCREEN_HEIGHT)) tft.drawSpot(i, y, 1, TFT_YELLOW, TFT_YELLOW);
         }
     }
 
     
+}
+
+float convertVoltage(uint16_t rawVoltage) {
+    float scaledVoltage = (((float)rawVoltage / 1000) - 3) * 5;
+    return scaledVoltage; 
 }

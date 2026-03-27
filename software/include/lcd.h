@@ -19,7 +19,7 @@ void printTimeDiv(float timeDiv);
 void printFreqPer(float freq, float per);
 void printMaxMin(float max, float min);
 void printDutyPk(float duty, float pk);
-void printVoltage(float voltage, uint8_t voltScale = 0, uint8_t readingMode = 1);
-void drawWave(uint8_t voltScale, uint8_t waveMode);
+void drawWave(uint8_t voltScale, uint16_t * voltData);
+float convertVoltage(uint16_t rawVoltage);
 
 #endif
