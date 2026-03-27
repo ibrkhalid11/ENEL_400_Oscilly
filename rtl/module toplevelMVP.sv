@@ -3,6 +3,7 @@ module toplevelMVP(
     input logic clk,
     input logic reset,
     /* UART pins */
+    input logic uart_en,
     input logic rx,
     output logic tx,
     /* XADC Pins for AC secition */
@@ -33,45 +34,23 @@ module toplevelMVP(
     logic       rx_valid;
     logic       synch_rx;
     /*bring in all xadc signals needed */
-    logic       ready_ac;
-    logic[15:0] data;
-    logic       ac_enable;
-    //logic[4:0] channel_out;
-    //logic     eoc_out;
-    logic[6:0]  daddr_in;
-    logic       eos_out;
-    logic       busy_out;
-    
-
 
     /* synchronize all pin inputs */
     logic synchpwm_comp;
-    xadc_wiz_0 ACADC (
-        .di_in(16'h0000),        // Not used for reading
-        .daddr_in(CHANNEL_ADDR), // Channel address
-        .den_in(enable),         // Enable signal
-        .dwe_in(1'b0),           // Not writing, so set to 0
-        .drdy_out(ac_ready),        // Data ready signal (when high, ADC data is valid)
-        .do_out(data),           // ADC data output
-        .dclk_in(clk),           // Use system clock
-        .reset_in(reset),   // Active-high reset
-        .vp_in(1'b0),            // Not used, leave disconnected
-        .vn_in(1'b0),            // Not used, leave disconnected
-        .vauxp15(vauxp15),       // Auxiliary analog input (positive)
-        .vauxn15(vauxn15),       // Auxiliary analog input (negative)
-        .channel_out(),          // Current channel being converted
-        .eoc_out(enable),        // End of conversion
-        .alarm_out(),            // Not used
-        .eos_out(eos_out),       // End of sequence
-        .busy_out(busy_out)      // XADC busy signal
-    );
-    
+    logic synch_uart_en;
     synchro synchpwmcomp(
         .clk(clk),
         .reset(reset),
         .in(pwm_comp),
         .out(synchpwm_comp)
     );
+    synchro uart_en_sync(
+    .clk(clk),
+    .reset(reset),
+    .in(uart_en),
+    .out(synch_uart_en)
+    );
+    
     synchro synch_uart_rx (
         .clk(clk),
         .reset(reset),
@@ -92,6 +71,7 @@ module toplevelMVP(
         .rst(reset),
         .data_in(signal_select_out),   // 16-bit ADC result
         .data_valid(ready_r_out),      // fires when recorder has new sample
+        .uart_en(synch_uart_en),
         .tx_data(tx_data),
         .tx_start(tx_start),
         .tx_busy(tx_busy)
@@ -144,6 +124,8 @@ module toplevelMVP(
         .ready_r_out(ready_r_out)
     );
         /* DC processing instant */
+        
+        /* TODO: change the scaling factor to fit 0-30000 rather than 0-3300 */
     adc_processing #(.SCALING_FACTOR(825), .SHIFT_FACTOR(14)) DC_PROC (
         .clk(clk),
         .reset(reset),
@@ -152,7 +134,7 @@ module toplevelMVP(
         .averaged_data(averaged_data),
         .scaled_adc_data(scaled_data)
     );
-    
+    /* TODO ADD SELECT SWITCH/GPIO FOR THIS */
     mux21 #(.WIDTH(16)) SIGNAL_SEL (
         .select(1'b0),          // or a switch if you want to toggle
         .d0(scaled_data),
@@ -168,6 +150,7 @@ module toplevelMVP(
         .bcd_out(bcd_out)
     );
     logic [15:0] binbcd_sel_out;
+    /*TODO: WIRE THIS TO A SWITCH */
     mux21 #(.WIDTH(16)) BINBCD_SEL (
         .select(1'b1),          // or wire to a switch
         .d0(signal_select_out),
@@ -175,6 +158,7 @@ module toplevelMVP(
         .y(binbcd_sel_out)
     );
     /* SSD instant*/
+    /* KEEP THIS ONLY FOR DC */
     seven_segment_display_subsystem SSD (
         .clk(clk),
         .reset(reset),
@@ -186,6 +170,5 @@ module toplevelMVP(
         .CE(CE), .CF(CF), .CG(CG), .DP(DP),
         .AN1(AN1), .AN2(AN2), .AN3(AN3), .AN4(AN4)
     );
-    
 
 endmodule

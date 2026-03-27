@@ -1,6 +1,7 @@
 module uart_send_16 (
     input  logic        clk,
     input  logic        rst,
+    input  logic        uart_en,
     input  logic [15:0] data_in,
     input  logic        data_valid,   // pulse when new data ready
     output logic [7:0]  tx_data,
@@ -28,7 +29,7 @@ module uart_send_16 (
 
             case (state)
                 IDLE: begin
-                    if (data_valid && !tx_busy) begin
+                    if (data_valid && !tx_busy && uart_en) begin
                         data_latch <= data_in;
                         tx_data    <= data_in[15:8];  // high byte first
                         tx_start   <= 1;
