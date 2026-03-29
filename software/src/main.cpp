@@ -27,7 +27,7 @@ float freq = 0;
 float per = 0;
 float vMax = 0;
 float vMin = 0;
-float duty = 0;
+float amp = 0;
 float pkToPk = 0;
 
 uint8_t dataReadyFlag = 0;
@@ -176,7 +176,7 @@ void encoderMeasTask(void * parameters) {
 
                     if (measurement == 0) printFreqPer(freq, per);
                     else if (measurement == 1) printMaxMin(vMax, vMin);
-                    else if (measurement == 2) printDutyPk(duty, pkToPk);
+                    else if (measurement == 2) printAmpPk(amp, pkToPk);
 
                     measEn.enFlag = 0;
 
@@ -228,12 +228,13 @@ void waveformUpdateTask(void * parameters) {
                 vMax = convertVoltage(vMaxUnion.measurement);
                 vMin = convertVoltage(vMinUnion.measurement);
                 pkToPk = convertVoltage(pkToPkUnion.measurement);
+                amp = pkToPk / 2;
                 
                 drawWave(voltDivIndex, voltUnion.voltData);
 
                 if (measurement == 0) printFreqPer(freq, per);
                 else if (measurement == 1) printMaxMin(vMax, vMin);
-                else if (measurement == 2) printDutyPk(duty, pkToPk);
+                else if (measurement == 2) printAmpPk(amp, pkToPk);
 
                 dataReadyFlag = 0;
                 digitalWrite(MCU_READY, 1);

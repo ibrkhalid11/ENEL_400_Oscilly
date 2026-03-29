@@ -18,7 +18,7 @@ void printVoltDiv(float voltDiv);
 void printTimeDiv(float timeDiv);
 void printFreqPer(float freq, float per);
 void printMaxMin(float max, float min);
-void printDutyPk(float duty, float pk);
+void printAmpPk(float amp, float pk);
 void drawWave(uint8_t voltScale, uint16_t * voltData);
 float convertVoltage(uint16_t rawVoltage);
 
