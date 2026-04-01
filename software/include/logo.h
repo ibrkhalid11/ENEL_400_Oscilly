@@ -1,7 +1,7 @@
 
 
-#ifndef LGO
-#define LGO
+#ifndef LOGO_H
+#define LOGO_H
 #include <Arduino.h>
 
 static const uint8_t bitmap[] = {

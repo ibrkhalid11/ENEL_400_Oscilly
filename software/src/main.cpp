@@ -1,10 +1,9 @@
 #include <Arduino.h>
+#include <main.h>
 #include <lcd.h>
 #include <hardware.h>
 #include <tasks.h>
-#include <uart.h>
 
-uint8_t voltReadingMode = 1;
 uint8_t measurement = 0;
 uint8_t voltDivIndex = 0;
 uint8_t timeDivIndex = 0;
@@ -32,22 +31,23 @@ float pkToPk = 0;
 
 uint8_t dataReadyFlag = 0;
 uint8_t rxReadyFlag = 1;
-
+uint8_t currentMode = 0;
+uint8_t fpgaSetting = 0;
 
 HardwareSerial fpga(2);
 
 void setup() {
-  
-  fpga.setRxBufferSize(1024);
-  fpga.begin(115200, SERIAL_8N1, 13, 12, false, 4096);
-  Serial.begin(9600);
-  lcdInit();
-  pinInit();
 
-  uartQueue = xQueueCreate(5, sizeof(float));
-  displayMutex = xSemaphoreCreateMutex();
-  measMutex = xSemaphoreCreateMutex();
-  taskCreate();
+    fpga.setRxBufferSize(1024);
+    fpga.begin(115200, SERIAL_8N1, 13, 12, false, 4096);
+    Serial.begin(9600);
+    lcdInit();
+    pinInit();
+
+    uartQueue = xQueueCreate(5, sizeof(float));
+    displayMutex = xSemaphoreCreateMutex();
+    measMutex = xSemaphoreCreateMutex();
+    taskCreate();
 
 }
 
@@ -56,107 +56,117 @@ void loop() {
 }
 
 void taskCreate() {
-  xTaskCreate(
-      encoderVoltTask,
-      "encoderVoltTask",
-      10000,
-      NULL,
-      1,
-      NULL
-  );
 
-  xTaskCreate(
-      encoderTimeTask,
-      "encoderTimeTask",
-      10000,
-      NULL,
-      1,
-      NULL
-  );
+    xTaskCreate(
+        encoderVoltTask,
+        "encoderVoltTask",
+        10000,
+        NULL,
+        1,
+        NULL
+    );
 
-  xTaskCreate(
-      encoderMeasTask,
-      "encoderMeasTask",
-      10000,
-      NULL,
-      1,
-      NULL
-  );
+    xTaskCreate(
+        encoderTimeTask,
+        "encoderTimeTask",
+        10000,
+        NULL,
+        1,
+        NULL
+    );
 
-  xTaskCreate(
-      uartTask,
-      "uartTask",
-      10000,
-      NULL,
-      3,
-      NULL
-  );
+    xTaskCreate(
+        encoderMeasTask,
+        "encoderMeasTask",
+        10000,
+        NULL,
+        1,
+        NULL
+    );
 
-  xTaskCreate(
-      waveformUpdateTask,
-      "waveformUpdateTask",
-      10000,
-      NULL,
-      4,
-      NULL
-  );
+    xTaskCreate(
+        uartTask,
+        "uartTask",
+        10000,
+        NULL,
+        3,
+        NULL
+    );
+
+    xTaskCreate(
+        waveformUpdateTask,
+        "waveformUpdateTask",
+        10000,
+        NULL,
+        4,
+        NULL
+    );
+    
 }
 
 void encoderVoltTask(void * parameters) {
-  while(1) {
-      if(voltEn.enFlag) {
-          if (millis() - voltEn.enTimestamp >= DEBOUNCE_TIME) {
+    while(1) {
+        if(voltEn.enFlag) {
+            if (millis() - voltEn.enTimestamp >= DEBOUNCE_TIME) {
 
-              if(xSemaphoreTake(displayMutex, 0) == pdTRUE) {
-            
-                  if (voltEn.s2State) {
-                      if (voltDivIndex >= 3);
-                      else voltDivIndex++;
-                  } else {
-                      if (voltDivIndex <= 0);
-                      else voltDivIndex--;
-                  }
+                if(xSemaphoreTake(displayMutex, 0) == pdTRUE) {
 
-                  printVoltDiv(voltDivModes[voltDivIndex]);
-                  drawWave(voltDivIndex, voltUnion.voltData);
+                    if (voltEn.s2State) {
+                        if (voltDivIndex >= 3);
+                        else voltDivIndex++;
+                    } else {
+                        if (voltDivIndex <= 0);
+                        else voltDivIndex--;
+                    }
 
-                  voltEn.enFlag = 0;
+                    printVoltDiv(voltDivModes[voltDivIndex]);
+                    drawWave(voltDivIndex, voltUnion.voltData);
 
-                  xSemaphoreGive(displayMutex);
-              }
-          }
-      }
+                    voltEn.enFlag = 0;
 
-      vTaskDelay(pdTICKS_TO_MS(50));
-  }
+                    xSemaphoreGive(displayMutex);
+                    
+                }
+            }
+        }
+
+        vTaskDelay(pdTICKS_TO_MS(50));
+
+    }
 }
 
 void encoderTimeTask(void * parameters) {
-  while(1) {
-      if(timeEn.enFlag) {
-          if (millis() - timeEn.enTimestamp >= DEBOUNCE_TIME) {
+    while(1) {
+        if(timeEn.enFlag) {
+            if (millis() - timeEn.enTimestamp >= DEBOUNCE_TIME) {
 
-              if(xSemaphoreTake(displayMutex, 0) == pdTRUE) {
+                if(xSemaphoreTake(displayMutex, 0) == pdTRUE) {
 
-                  if (timeEn.s2State) {
-                      if (timeDivIndex >= 11);
-                      else timeDivIndex++;
-                  } else {
-                      if (timeDivIndex <= 0);
-                      else timeDivIndex--;
-                  }
+                    if (timeEn.s2State) {
+                        if (timeDivIndex >= 11);
+                        else timeDivIndex++;
+                    } else {
+                        if (timeDivIndex <= 0);
+                        else timeDivIndex--;
+                    }
 
-                  printTimeDiv(timeDivModes[timeDivIndex]);
+                    printTimeDiv(timeDivModes[timeDivIndex]);
 
-                  timeEn.enFlag = 0;
+                    fpgaSetting = timeDivIndex << 1;
+                    fpgaSetting |= currentMode;
+                    fpga.write(fpgaSetting);
 
-                  xSemaphoreGive(displayMutex);
-              }
-          }
-      }
+                    timeEn.enFlag = 0;
 
-      vTaskDelay(pdTICKS_TO_MS(10));
-  }
+                    xSemaphoreGive(displayMutex);
+
+                }
+            }
+        }
+
+        vTaskDelay(pdTICKS_TO_MS(50));
+
+    }
 }
 
 void encoderMeasTask(void * parameters) {
@@ -182,44 +192,54 @@ void encoderMeasTask(void * parameters) {
 
                     xSemaphoreGive(displayMutex);
                     xSemaphoreGive(measMutex);
+
                 }
             }
         }
 
-        vTaskDelay(pdTICKS_TO_MS(100));
+        if (measEn.btnFlag) {
+            if (millis() - measEn.btnTimestamp >= DEBOUNCE_TIME) {
+
+                currentMode = currentMode ? 0 : 1;
+
+                fpgaSetting = timeDivIndex << 1;
+                fpgaSetting |= currentMode;
+                fpga.write(fpgaSetting);
+
+                measEn.btnFlag = 0;
+
+            }
+        }
+
+        vTaskDelay(pdTICKS_TO_MS(50));
+
     }
 }
 
 void uartTask (void * parameters) {
-
     while(1) {
         if (!dataReadyFlag) {
             if (fpga.available() >= 968) {
-                
-                fpga.readBytes(voltUnion.receivedArray, 960);
-                fpga.readBytes(perUnion.receivedArray, 2);
-                fpga.readBytes(vMaxUnion.receivedArray, 2);
-                fpga.readBytes(vMinUnion.receivedArray, 2);
-                fpga.readBytes(pkToPkUnion.receivedArray, 2);
-                fpga.readBytes(scrapBuffer, 1024);
 
-                dataReadyFlag = 1;
+            fpga.readBytes(voltUnion.receivedArray, 960);
+            fpga.readBytes(perUnion.receivedArray, 2);
+            fpga.readBytes(vMaxUnion.receivedArray, 2);
+            fpga.readBytes(vMinUnion.receivedArray, 2);
+            fpga.readBytes(pkToPkUnion.receivedArray, 2);
+            fpga.readBytes(scrapBuffer, 1024);
+
+            dataReadyFlag = 1;
 
             }
-
-            // if (fpga.available() >= 200) {
-            //     Serial.println(fpga.read());
-            //     dataReadyFlag = 1;
-            // }
         }
 
-        vTaskDelay(pdMS_TO_TICKS(100));
+        vTaskDelay(pdMS_TO_TICKS(50));
+
     }
 }
 
 void waveformUpdateTask(void * parameters) {
     while(1) {
-        
         if (dataReadyFlag) {
             if ((xSemaphoreTake(displayMutex, 0) == pdTRUE) && (xSemaphoreTake(measMutex, 0) == pdTRUE)) {
 
@@ -229,7 +249,7 @@ void waveformUpdateTask(void * parameters) {
                 vMin = convertVoltage(vMinUnion.measurement);
                 pkToPk = convertVoltage(pkToPkUnion.measurement);
                 amp = pkToPk / 2;
-                
+
                 drawWave(voltDivIndex, voltUnion.voltData);
 
                 if (measurement == 0) printFreqPer(freq, per);
@@ -240,11 +260,12 @@ void waveformUpdateTask(void * parameters) {
                 digitalWrite(MCU_READY, 1);
                 xSemaphoreGive(displayMutex);
                 xSemaphoreGive(measMutex);
-                
+
             }
 
         }
 
-        vTaskDelay(pdMS_TO_TICKS(100));
-   }
+        vTaskDelay(pdMS_TO_TICKS(50));
+
+    }
 }

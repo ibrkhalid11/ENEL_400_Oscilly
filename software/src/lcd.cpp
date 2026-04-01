@@ -1,8 +1,9 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <TFT_eSPI.h>
-#include <lcd.h>
 #include <printf.h>
+#include <lcd.h>
+#include <main.h>
 #include <logo.h>
 
 TFT_eSPI tft = TFT_eSPI();
@@ -37,7 +38,7 @@ void lcdInit() {
     printVoltDiv(5);
     printTimeDiv(500);
 
-    printFreqPer(60, (1/(float)60));
+    printFreqPer(0, 0);
 
 }
 
@@ -162,6 +163,7 @@ void printAmpPk(float amp, float pk) {
 void drawWave(uint8_t voltScale, uint16_t * voltData) {
     drawGrid();
     uint16_t pixPerVolt = 0;
+    uint16_t waveColour = currentMode ? TFT_YELLOW : TFT_CYAN;
 
     if (voltScale == 0) pixPerVolt = 6;
     else if (voltScale == 1) pixPerVolt = 30;
@@ -169,16 +171,17 @@ void drawWave(uint8_t voltScale, uint16_t * voltData) {
     else if (voltScale == 3) pixPerVolt = 300;
 
     for (uint16_t i = 0; i < 480; i++) {
+        
         if (i > 0) {
 
             float y = gridHorizontal - (convertVoltage(voltData[i]) * pixPerVolt);
             float lastY = gridHorizontal - (convertVoltage(voltData[i - 1]) * pixPerVolt);
 
-            if ((y > HEADER_HEIGHT) && (lastY > HEADER_HEIGHT)) tft.drawWideLine(i - 1, lastY, i, y, 3, TFT_YELLOW, TFT_YELLOW);
+            if ((y > HEADER_HEIGHT) && (lastY > HEADER_HEIGHT)) tft.drawWideLine(i - 1, lastY, i, y, 3, waveColour, waveColour);
 
         } else {
             float y = gridHorizontal - (convertVoltage(voltData[i]) * pixPerVolt);
-            if ((y > HEADER_HEIGHT) && (y < SCREEN_HEIGHT)) tft.drawSpot(i, y, 1, TFT_YELLOW, TFT_YELLOW);
+            if ((y > HEADER_HEIGHT) && (y < SCREEN_HEIGHT)) tft.drawSpot(i, y, 1, waveColour, waveColour);
         }
     }
 

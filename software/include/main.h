@@ -1,5 +1,9 @@
-#ifndef UARTT_HEAD
-#define UART_HEAD
+#ifndef MAIN_HEAD
+#define MAIN_HEAD
+
+#include <Arduino.h>
+
+extern uint8_t currentMode;
 
 typedef union {
     uint16_t measurement;
@@ -10,5 +14,6 @@ typedef union {
     uint16_t voltData[480];
     uint8_t receivedArray[960];
 } voltageUnion;
+  
 
 #endif

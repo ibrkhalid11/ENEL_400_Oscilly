@@ -1,0 +1,36 @@
+ENCODERS
+
+    volt:
+        S1 - 34
+        S2 - 39
+        KEY - 36
+
+    time:
+        S1 - 33
+        S2 - 32
+        KEY - 35
+
+    measurement:
+        S1 - 27
+        S2 - 26
+        KEY - 25
+
+LCD
+
+    MISO - 19
+    MOSI - 23
+    SCLK - 18
+    CS - 5
+    DC - 4
+    RST - EN
+    LED - 3V3
+
+FPGA
+
+    UART:
+        RX - 13
+        TX - 12
+
+    flags:
+        MCU READY - 22
+        FPGA READY - 21

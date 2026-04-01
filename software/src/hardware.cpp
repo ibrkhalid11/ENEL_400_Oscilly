@@ -26,7 +26,7 @@ void pinInit() {
 
     // attachInterrupt(KEY_VOLT, btnVoltISR, FALLING);
     // attachInterrupt(KEY_TIME, btnTimeISR, FALLING);
-    attachInterrupt(KEY_MEAS, btnMeasISR, FALLING);
+    attachInterrupt(KEY_MEAS, btnMeasISR, RISING);
 
     attachInterrupt(S1_VOLT, enVoltISR, RISING);
     attachInterrupt(S1_TIME, enTimeISR, RISING);
@@ -48,10 +48,10 @@ void IRAM_ATTR btnTimeISR(void) {
 
 void IRAM_ATTR btnMeasISR(void) {
 
-    // if (!measEn.btnFlag) {
-    //     measEn.btnTimestamp = millis();
-    //     measEn.btnFlag = 1;
-    // }
+    if (!measEn.btnFlag) {
+        measEn.btnTimestamp = millis();
+        measEn.btnFlag = 1;
+    }
 
 }
 

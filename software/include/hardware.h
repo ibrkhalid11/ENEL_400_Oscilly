@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-#define DEBOUNCE_TIME 75
+#define DEBOUNCE_TIME 50
 
 #define MCU_READY 22
 #define FPGA_READY 21
