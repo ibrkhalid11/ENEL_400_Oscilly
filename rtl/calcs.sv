@@ -73,7 +73,7 @@ module calcs #(
             meas_valid <= 1'b0;                // default: single-cycle pulse
  
             /* ── start pulse resets everything ─────────────────── */
-            if (start) begin
+            if (start && !active) begin
                 run_max          <= '0;
                 run_min          <= {WIDTH{1'b1}};
                 per_cnt          <= '0;

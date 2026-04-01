@@ -9,6 +9,24 @@
  * 
 */
 
+/* timescale to downsample --> based off 60_000_000 Sps
+ * 0: 500ms --> 2Hz --> ONLY FOR DC 
+ * 1: 100ms --> 10Hz --> only for DC
+ * 2: 50ms --> 20Hz
+ * 3: 10ms --> 100Hz
+ * 4: 5ms --> 200Hz
+ * 5: 1ms --> 1KHz
+ * 6: 0.1ms --> 10_000Hz
+ * 7: 0.05ms --> 20_000Hz
+ * 8: 0.01ms --> 100_000Hz
+ * 9: 0.005ms --> 200_000Hz
+ * 10: 0.001ms --> 1_000_000Hz
+ * 11: 0.0005ms --> 2_000_000Hz
+ * 12: 0.0001ms --> 10_000_000Hz
+ * 13: 0.00005ms --> 20_000_000Hz
+ * 14: 0.0000167ms --> 100_000_000Hz
+ *
+*/
 `timescale 1ns / 1ps
 
 module decimation #(
@@ -18,7 +36,7 @@ module decimation #(
     input logic clk,
     input logic reset,
     
-    input logic [2:0] timescale_in,
+    input logic [3:0] timescale_in,
 
     input logic [DATA_WIDTH - 1 : 0] adc_data,
     input logic adc_data_valid,
@@ -28,18 +46,37 @@ module decimation #(
 );
 
 
-    typedef int unsigned clk_ratio_t [7];
-
+    typedef int unsigned clk_ratio_t [15];
+    
+    /* based off 1MSPs*/
+    // localparam clk_ratio_t CLK_LUT = '{
+    //     1,
+    //     2,
+    //     10,
+    //     20,
+    //     100,
+    //     1_000,
+    //     10_000
+    // };
+    /* based off 60MSPS*/
     localparam clk_ratio_t CLK_LUT = '{
-        1,
-        2,
-        10,
-        20,
-        100,
-        1_000,
-        10_000
+        30_000_000,  //  0:  2 Hz
+         6_000_000,  //  1: 10 Hz
+         3_000_000,  //  2: 20 Hz
+           600_000,  //  3: 100 Hz
+           300_000,  //  4: 200 Hz
+            60_000,  //  5: 1 KHz
+             6_000,  //  6: 10 KHz
+             3_000,  //  7: 20 KHz
+               600,  //  8: 100 KHz
+               300,  //  9: 200 KHz
+                60,  // 10: 1 MHz
+                30,  // 11: 2 MHz
+                 6,  // 12: 10 MHz
+                 3,  // 13: 20 MHz
+                 1   // 14: 60 MHz (passthrough)
     };
-    logic [2:0] timescale_prev;
+    logic [3:0] timescale_prev;
     int unsigned decim_ratio;
     int unsigned decim_counter;
 

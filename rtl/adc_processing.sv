@@ -34,7 +34,7 @@ module adc_processing #(
 
     // Define the intermediate register with the required bit width, to avoid 32-bit overflow on intermediate calculation 
     logic [INTERMEDIATE_WIDTH-1:0] scaled_adc_data_temp; 
-
+    
     // Pulser 
     always_ff @(posedge clk)
         if (reset)
@@ -50,10 +50,16 @@ module adc_processing #(
         .reset(reset),
         .clk(clk),
         .EN(ready_pulse),
-        .Din(data),
+        .Din(rdata_r),
         .Q(ave_data)
     );
     
+    logic [15:0] rdata_r;
+
+    always_ff @(posedge clk) begin
+        if (ready)
+            rdata_r <= data;  // register FIFO output first
+    end
     always_ff @(posedge clk) begin
         if (reset) begin
             scaled_adc_data <= 0;

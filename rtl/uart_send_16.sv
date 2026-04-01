@@ -24,6 +24,7 @@ module uart_send_16 (
             state    <= IDLE;
             tx_start <= 0;
             tx_data  <= 0;
+            data_latch <= 0;
         end else begin
             tx_start <= 0; // default pulse low
 
