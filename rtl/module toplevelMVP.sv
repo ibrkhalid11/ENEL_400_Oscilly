@@ -7,6 +7,7 @@ module toplevelMVP(
     input logic [9:0] async_adc,
     /* UART pins */
     input logic uart_en,
+    output logic mpreg,
     input logic rx,
     output logic tx,
     /* XADC Pins for AC secition */
@@ -35,11 +36,13 @@ module toplevelMVP(
     logic [7:0] tx_data;
     logic       tx_start;
     logic       tx_busy;
+    logic       tx_word_busy;   // high for entire 2-byte word
     logic [7:0] rx_data;
     logic       rx_valid;
     logic       synch_rx;
     /*bring in all xadc signals needed */
     logic [3:0] timescale_set;
+
     /* synchronize all pin inputs */
     logic synchpwm_comp;
     logic synch_uart_en;
@@ -50,10 +53,10 @@ module toplevelMVP(
         .out(synchpwm_comp)
     );
     synchro uart_en_sync(
-    .clk(clk),
-    .reset(reset),
-    .in(uart_en),
-    .out(synch_uart_en)
+        .clk(clk),
+        .reset(reset),
+        .in(uart_en),
+        .out(synch_uart_en)
     );
     
     logic [9:0] ext_adc_data;
@@ -65,13 +68,13 @@ module toplevelMVP(
         .wrst_n(1'b1),
         .wdata(async_adc),
         .winc(1'b1),
-        .wfull(),               // safe to leave open
-    
+        .wfull(),
+
         .rclk(clk),
         .rrst_n(~reset),
         .rdata(ext_adc_data),
         .rinc(~fifo_empty),
-        .rempty(fifo_empty)     // this is your valid signal
+        .rempty(fifo_empty)
     );
     synchro synch_uart_rx (
         .clk(clk),
@@ -80,20 +83,44 @@ module toplevelMVP(
         .out(synch_rx)
     );
 
-    /* correct all inputs if needed */
+//    /* ============================================================
+//     *  DEBUG HEARTBEAT - sends 0xBEEF every ~0.5 s (100 MHz)
+//     *  Proves the UART PHY + wiring work independently of the
+//     *  SAR / AC data paths.  Remove once the real path is live.
+//     * ============================================================ */
+//    logic [25:0] dbg_cnt;
+//    logic        dbg_pulse;
+//    logic [15:0] dbg_data;
 
-
-    /* UART comms instants */
+//    always_ff @(posedge clk) begin
+//        if (reset) begin
+//            dbg_cnt   <= '0;
+//            dbg_pulse <= 1'b0;
+//        end else begin
+//            dbg_pulse <= 1'b0;
+//            if (dbg_cnt == 26'd49_999_999) begin
+//                dbg_cnt   <= '0;
+//                dbg_pulse <= 1'b1;
+//            end else begin
+//                dbg_cnt <= dbg_cnt + 1;
+//            end
+//        end
+//    end
+//    assign dbg_data = 16'hBEEF;
+    logic real_data_valid;
+    assign real_data_valid = ac_mode ? buf_uart_valid : dc_buf_uart_valid;
+    /* UART comms */
 
     // Transmit controller
     uart_send_16 UART_CTRL (
         .clk(clk),
         .rst(reset),
-        .data_in(uart_data_mux),   // 16-bit ADC result
-        .data_valid(ac_mode ? buf_uart_valid : ready_r_out),      // fires when recorder has new sample
+        .data_in(uart_data_mux),
+        .data_valid(real_data_valid),
         .uart_en(synch_uart_en),
         .tx_data(tx_data),
         .tx_start(tx_start),
+        .tx_word_busy(tx_word_busy),
         .tx_busy(tx_busy)
     );
 
@@ -107,7 +134,7 @@ module toplevelMVP(
         .tx_busy(tx_busy)
     );
 
-    // UART RX (optional, if you need to receive commands)
+    // UART RX
     uart_rx #(.BAUD_DIV(868)) UART_RX_INST (
         .clk(clk),
         .rst(reset),
@@ -125,22 +152,25 @@ module toplevelMVP(
     );
     mux21 #(.WIDTH(16)) UART_DATA_SEL (
         .select(ac_mode),
-        .d0(signal_select_out),  // DC path
+        .d0(dc_buf_uart_data),   // DC path - now from DC RAM buffer
         .d1(buf_uart_data),      // AC path
         .y(uart_data_mux)
     );
     
     /* ======== DC PATH ======= */
-        /* sar instantiation */
+    logic nsynchpwm_comp;
+    corrector CORRECTOR(
+        .in(synchpwm_comp),
+        .out(nsynchpwm_comp)
+    );
     sar #(.WIDTH(8)) DC_ADC(
         .clk(clk),
         .reset(reset),
-        .comparator(synchpwm_comp),
+        .comparator(nsynchpwm_comp),
         .adc_out(adc_out),
         .R2R_out(duty_cycle_test),
         .valid(valid_sar)
     );
-        /* sar pwm instantiation */
     pwm #(.WIDTH(8)) SAR_PWM (
         .clk(clk),
         .reset(reset),
@@ -148,7 +178,6 @@ module toplevelMVP(
         .duty_cycle(duty_cycle_test),
         .pwm_out(dc_pwm_out)
     );
-        /* DC recorder instant */
     recorder SAR_RECORDER (
         .clk(clk),
         .reset(reset),
@@ -157,10 +186,8 @@ module toplevelMVP(
         .duty_cycle_out(raw_adc),
         .ready_r_out(ready_r_out)
     );
-        /* DC processing instant */
-        
-        /* TODO: change the scaling factor to fit 0-30000 rather than 0-3300 */
-        adc_processing #(.SCALING_FACTOR(825), .SHIFT_FACTOR(14)) DC_PROC (
+
+    xadc_processing #(.SCALING_FACTOR(825), .SHIFT_FACTOR(14)) DC_PROC (
         .clk(clk),
         .reset(reset),
         .ready(ready_r_out),
@@ -168,19 +195,62 @@ module toplevelMVP(
         .averaged_data(averaged_data),
         .scaled_adc_data(scaled_data)
     );
+
+    /* ======== DC RAM BUFFER ======= */
+    logic [15:0] dc_buf_uart_data;
+    logic        dc_buf_uart_valid;
+    logic        dc_buffer_full;
+    logic        dc_buffer_done;
+
+    /* DC re-arm / force-trigger: periodically re-triggers when in DC mode */
+    logic        dc_force_trigger;
+    logic [19:0] dc_rearm_cnt;
+    always_ff @(posedge clk) begin
+        if (reset || ac_mode) begin
+            dc_rearm_cnt     <= '0;
+            dc_force_trigger <= 1'b0;
+        end else begin
+            dc_force_trigger <= 1'b0;
+            dc_rearm_cnt     <= dc_rearm_cnt + 1;
+            if (dc_rearm_cnt == '1) begin
+                dc_force_trigger <= 1'b1;
+            end
+        end
+    end
+
+    ram_buffer #(
+        .WIDTH(16),
+        .DEPTH(480)
+    ) DC_RAM_BUFFER (
+        .clk(clk),
+        .reset(reset),
+        .timescale_in(4'd0),
+        .trigger(dc_force_trigger),
+        .sample_in(scaled_data),
+        .sample_valid(ready_r_out),
+        .uart_ready(synch_uart_en & ~tx_word_busy),
+        .uart_data(dc_buf_uart_data),
+        .uart_valid(dc_buf_uart_valid),
+        .buffer_full(dc_buffer_full),
+        .buffer_done(dc_buffer_done),
+        .vmax(16'h0),
+        .vmin(16'h0),
+        .vpp(16'h0),
+        .period_count(9'h0)
+    );
     
-    
+    /* ======== ASYNC (EXTERNAL) ADC PATH ======= */
     logic [15:0] async_scaled_data, async_averaged_data;
     logic        async_ready_pulse;
     
-    adc_processing #(
+    xadc_processing #(
         .SCALING_FACTOR(825),
         .SHIFT_FACTOR(14)
     ) ASYNC_ADC_PROC (
         .clk(clk),
         .reset(reset),
         .ready(~fifo_empty),
-        .data({ext_adc_data, 6'b0}),      // zero-extend 10-bit to 16-bit
+        .data({ext_adc_data, 6'b0}),
         .averaged_data(async_averaged_data),
         .scaled_adc_data(async_scaled_data),
         .ready_pulse(async_ready_pulse)
@@ -201,20 +271,38 @@ module toplevelMVP(
         .sample_valid(decim_valid)        
     );
     
-    /* need to write a trigger file */
+    /* ======== AC TRIGGER + BUFFER PATH ======= */
     logic [15:0] buf_uart_data;
     logic        buf_uart_valid;
+    logic        ac_buffer_full;
+    logic        ac_buffer_done;
     logic trigger_level, trigger_edge;
 
     trigger #(.WIDTH(16)) TRIG (
         .clk(clk),
         .reset(reset),
         .sample_in(decimated_data),
-        .threshold(16'h8000),
+        .threshold(16'h0672),
         .sample_valid(decim_valid),
         .trigger_level(trigger_level),
         .trigger_edge(trigger_edge)
     );
+
+    // Bypass trigger: capture immediately on AC mode entry
+    logic force_trigger;
+    logic [19:0] rearm_cnt;
+    always_ff @(posedge clk) begin
+        if (reset || !ac_mode) begin
+            rearm_cnt     <= '0;
+            force_trigger <= 0;
+        end else begin
+            force_trigger <= 0;
+            rearm_cnt <= rearm_cnt + 1;
+            if (rearm_cnt == '1) begin
+                force_trigger <= 1;
+            end
+        end
+    end
     logic [15:0] calc_vmax, calc_vmin, calc_vpp;
     logic [8:0] calc_period;
     logic calc_valid;
@@ -228,15 +316,17 @@ module toplevelMVP(
         .start(trigger_edge),
         .sample_in(decimated_data),
         .sample_valid(decim_valid),
-        .threshold(16'h8000),
+        .threshold(16'h0672),
         .vmax(calc_vmax),
         .vmin(calc_vmin),
         .vpp(calc_vpp),
         .period_count(calc_period),
-        .high_count(),              // unused for now
+        .high_count(),
         .meas_valid(calc_valid)
     );
     
+    /* Gate uart_ready with synch_uart_en so the buffer only
+       drains when the host has UART enabled.                  */
     ram_buffer #(
         .WIDTH(16),
         .DEPTH(480)
@@ -244,26 +334,46 @@ module toplevelMVP(
         .clk(clk),
         .reset(reset),
         .timescale_in(timescale_set),
-        .trigger(trigger_edge),
+        .trigger(trigger_edge | force_trigger),
         .sample_in(decimated_data),
         .sample_valid(decim_valid),
-        .uart_ready(~tx_busy),
+        .uart_ready(synch_uart_en & ~tx_word_busy),
         .uart_data(buf_uart_data),
         .uart_valid(buf_uart_valid),
+        .buffer_full(ac_buffer_full),
+        .buffer_done(ac_buffer_done),
         .vmax(calc_vmax),
         .vmin(calc_vmin),
         .vpp(calc_vpp),
         .period_count(calc_period)
     );
-    /* TODO ADD SELECT SWITCH/GPIO FOR THIS */
+
+    /* ======== mpreg handshake ========
+     *  SET   when the active buffer finishes capturing (buffer_full pulse)
+     *  CLEAR when the buffer finishes draining (buffer_done pulse)
+     *  mpreg stays HIGH the entire readout so the host can see it.        */
+    logic active_buffer_full;
+    logic active_buffer_done;
+    assign active_buffer_full = ac_mode ? ac_buffer_full : dc_buffer_full;
+    assign active_buffer_done = ac_mode ? ac_buffer_done : dc_buffer_done;
+
+    always_ff @(posedge clk) begin
+        if (reset)
+            mpreg <= 1'b0;
+        else if (active_buffer_full)
+            mpreg <= 1'b1;          // buffer just filled → tell host
+        else if (active_buffer_done)
+            mpreg <= 1'b0;          // drain complete → ready for next capture
+    end
+
+    /* ======== DC DISPLAY PATH ======= */
     mux21 #(.WIDTH(16)) SIGNAL_SEL (
-        .select(1'b0),          // or a switch if you want to toggle
+        .select(1'b0),
         .d0(scaled_data),
         .d1(averaged_data),
         .y(signal_select_out)
     );
     
-    /* bin_to_bcd instant */
     bin_to_bcd BIN2BCD (
         .clk(clk),
         .reset(reset),
@@ -271,15 +381,12 @@ module toplevelMVP(
         .bcd_out(bcd_out)
     );
     logic [15:0] binbcd_sel_out;
-    /*TODO: WIRE THIS TO A SWITCH */
     mux21 #(.WIDTH(16)) BINBCD_SEL (
-        .select(1'b1),          // or wire to a switch
+        .select(1'b1),
         .d0(signal_select_out),
         .d1(bcd_out),
         .y(binbcd_sel_out)
     );
-    /* SSD instant*/
-    /* KEEP THIS ONLY FOR DC */
     seven_segment_display_subsystem SSD (
         .clk(clk),
         .reset(reset),
@@ -291,10 +398,14 @@ module toplevelMVP(
         .CE(CE), .CF(CF), .CG(CG), .DP(DP),
         .AN1(AN1), .AN2(AN2), .AN3(AN3), .AN4(AN4)
     );
-    logic fifo_not_empty_prev;
-    logic fifo_read_pulse;
-    always_ff @(posedge clk) begin
-        fifo_not_empty_prev <= ~fifo_empty;
-        fifo_read_pulse     <= (~fifo_empty) & fifo_not_empty_prev ? 1'b0 : (~fifo_empty);
-    end
-endmodule 
+
+    /* ======== LED debug ======= */
+    assign led[0]    = 0;
+    assign led[1]    = synch_uart_en;     // uart_en recognised
+    assign led[2]    = ac_mode;           // AC mode active
+    assign led[3]    = real_data_valid;   // real data path is firing
+    assign led[4]    = tx_word_busy;      // UART transmitting a word
+    assign led[5]    = mpreg;             // buffer full indicator
+    assign led[15:6] = '0;
+
+endmodule

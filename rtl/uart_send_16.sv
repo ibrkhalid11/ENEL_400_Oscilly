@@ -6,13 +6,15 @@ module uart_send_16 (
     input  logic        data_valid,   // pulse when new data ready
     output logic [7:0]  tx_data,
     output logic        tx_start,
+    output logic        tx_word_busy,  // high while sending either byte
     input  logic        tx_busy
 );
 
-    typedef enum logic [1:0] {
+    typedef enum logic [2:0] {
         IDLE,
         SEND_HIGH,
         SEND_LOW,
+        WAIT_DONE,
         WAIT
     } state_t;
 
@@ -32,7 +34,7 @@ module uart_send_16 (
                 IDLE: begin
                     if (data_valid && !tx_busy && uart_en) begin
                         data_latch <= data_in;
-                        tx_data    <= data_in[15:8];  // high byte first
+                        tx_data    <= data_in[7:0];  // low byte first: youssef edition
                         tx_start   <= 1;
                         state      <= SEND_HIGH;
                     end
@@ -45,17 +47,23 @@ module uart_send_16 (
 
                 WAIT: begin
                     if (!tx_busy) begin
-                        tx_data  <= data_latch[7:0];  // low byte
+                        tx_data  <= data_latch[15:8];  // high byte second: youssef edition
                         tx_start <= 1;
                         state    <= SEND_LOW;
                     end
                 end
 
                 SEND_LOW: begin
-                    if (tx_busy) state <= IDLE;
+                    if (tx_busy) state <= WAIT_DONE;
+                end
+
+                WAIT_DONE: begin
+                    if (!tx_busy) state <= IDLE;  // byte 2 fully transmitted
                 end
             endcase
         end
     end
+
+    assign tx_word_busy = (state != IDLE);
 
 endmodule
