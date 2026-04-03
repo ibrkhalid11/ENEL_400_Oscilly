@@ -13,6 +13,8 @@ module ram_buffer #(
     input logic uart_ready,
     output logic [WIDTH - 1 : 0] uart_data,
     output logic uart_valid,
+    output logic buffer_full,
+    output logic buffer_done,
     // calc inputs
     input logic [WIDTH-1:0]       vmax,
     input logic [WIDTH-1:0]       vmin,
@@ -46,6 +48,14 @@ module ram_buffer #(
         APPEND
     } state_t;
     state_t state;
+
+    /* buffer_full: one-cycle pulse when capture completes */
+    assign buffer_full = (state == CAPTURE) && sample_valid
+                         && (waddr == capture_depth - 1);
+
+    /* buffer_done: one-cycle pulse when drain (APPEND) finishes */
+    assign buffer_done = (state == APPEND) && uart_ready
+                         && (append_idx == 2'd3);
 
     /* write port */
     always_ff @(posedge clk) begin
