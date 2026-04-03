@@ -187,10 +187,10 @@ module toplevelMVP(
         .ready_r_out(ready_r_out)
     );
 
-    xadc_processing #(.SCALING_FACTOR(825), .SHIFT_FACTOR(14)) DC_PROC (
+    xadc_processing #(.SCALING_FACTOR(7_500), .SHIFT_FACTOR(14)) DC_PROC (
         .clk(clk),
         .reset(reset),
-        .ready(ready_r_out),
+        .ready(ready_r_out),                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
         .data({raw_adc, 8'b0}),
         .averaged_data(averaged_data),
         .scaled_adc_data(scaled_data)
@@ -244,7 +244,7 @@ module toplevelMVP(
     logic        async_ready_pulse;
     
     xadc_processing #(
-        .SCALING_FACTOR(825),
+        .SCALING_FACTOR(2500),
         .SHIFT_FACTOR(14)
     ) ASYNC_ADC_PROC (
         .clk(clk),
