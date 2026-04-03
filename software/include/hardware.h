@@ -33,6 +33,7 @@ void enMeasISR(void);
 void fpgaReadyISR(void);
 
 typedef struct {
+
     uint8_t enFlag;
     uint8_t btnFlag;
     uint8_t s2State;

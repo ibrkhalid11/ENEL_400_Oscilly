@@ -189,6 +189,13 @@ void drawWave(uint8_t voltScale, uint16_t * voltData) {
 }
 
 float convertVoltage(uint16_t rawVoltage) {
-    float scaledVoltage = (((float)rawVoltage / 1000) - 3) * 5;
+    
+    float scaledVoltage = 0;
+    
+    if (currentMode) {
+        scaledVoltage = (((float)rawVoltage / 1000) - 5);
+    } else {
+        scaledVoltage = (((float)rawVoltage / 1000) - 15);
+    }
     return scaledVoltage; 
 }

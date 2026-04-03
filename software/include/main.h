@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-extern uint8_t currentMode;
+extern volatile uint8_t currentMode;
 
 typedef union {
     uint16_t measurement;

@@ -27,18 +27,21 @@ void pinInit() {
     // attachInterrupt(KEY_VOLT, btnVoltISR, FALLING);
     // attachInterrupt(KEY_TIME, btnTimeISR, FALLING);
     attachInterrupt(KEY_MEAS, btnMeasISR, RISING);
+    // attachInterrupt(KEY_VOLT, btnVoltISR, RISING);
 
     attachInterrupt(S1_VOLT, enVoltISR, RISING);
     attachInterrupt(S1_TIME, enTimeISR, RISING);
     attachInterrupt(S1_MEAS, enMeasISR, RISING);
     
-    attachInterrupt(FPGA_READY, fpgaReadyISR, FALLING);
+    // attachInterrupt(FPGA_READY, fpgaReadyISR, FALLING);
     
 }
 
 // interrupts
 
 void IRAM_ATTR btnVoltISR(void) {
+
+    digitalWrite(MCU_READY, 1);
 
 }
 

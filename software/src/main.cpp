@@ -31,7 +31,7 @@ float pkToPk = 0;
 
 uint8_t dataReadyFlag = 0;
 uint8_t rxReadyFlag = 1;
-uint8_t currentMode = 0;
+volatile uint8_t currentMode = 0;
 uint8_t fpgaSetting = 0;
 
 HardwareSerial fpga(2);
@@ -40,6 +40,7 @@ void setup() {
 
     fpga.setRxBufferSize(1024);
     fpga.begin(115200, SERIAL_8N1, 13, 12, false, 4096);
+    fpga.setTimeout(0);
     Serial.begin(9600);
     lcdInit();
     pinInit();
@@ -220,15 +221,16 @@ void uartTask (void * parameters) {
     while(1) {
         if (!dataReadyFlag) {
             if (fpga.available() >= 968) {
+                digitalWrite(MCU_READY, 0);
+                fpga.readBytes(voltUnion.receivedArray, 960);
+                fpga.readBytes(perUnion.receivedArray, 2);
+                fpga.readBytes(vMaxUnion.receivedArray, 2);
+                fpga.readBytes(vMinUnion.receivedArray, 2);
+                fpga.readBytes(pkToPkUnion.receivedArray, 2);
 
-            fpga.readBytes(voltUnion.receivedArray, 960);
-            fpga.readBytes(perUnion.receivedArray, 2);
-            fpga.readBytes(vMaxUnion.receivedArray, 2);
-            fpga.readBytes(vMinUnion.receivedArray, 2);
-            fpga.readBytes(pkToPkUnion.receivedArray, 2);
-            fpga.readBytes(scrapBuffer, 1024);
+                while (fpga.available()) fpga.read();
 
-            dataReadyFlag = 1;
+                dataReadyFlag = 1;
 
             }
         }
@@ -265,7 +267,7 @@ void waveformUpdateTask(void * parameters) {
 
         }
 
-        vTaskDelay(pdMS_TO_TICKS(50));
+        vTaskDelay(pdMS_TO_TICKS(500));
 
     }
 }
