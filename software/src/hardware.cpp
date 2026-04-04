@@ -24,10 +24,9 @@ void pinInit() {
 
     pinMode(FPGA_READY, INPUT);
 
-    // attachInterrupt(KEY_VOLT, btnVoltISR, FALLING);
-    // attachInterrupt(KEY_TIME, btnTimeISR, FALLING);
+    attachInterrupt(KEY_VOLT, btnVoltISR, RISING);
+    // attachInterrupt(KEY_TIME, btnTimeISR, RISING);
     attachInterrupt(KEY_MEAS, btnMeasISR, RISING);
-    // attachInterrupt(KEY_VOLT, btnVoltISR, RISING);
 
     attachInterrupt(S1_VOLT, enVoltISR, RISING);
     attachInterrupt(S1_TIME, enTimeISR, RISING);
@@ -41,7 +40,10 @@ void pinInit() {
 
 void IRAM_ATTR btnVoltISR(void) {
 
-    digitalWrite(MCU_READY, 1);
+    if (!voltEn.btnFlag) {
+        voltEn.btnTimestamp = millis();
+        voltEn.btnFlag = 1;
+    }
 
 }
 

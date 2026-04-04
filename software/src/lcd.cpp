@@ -121,7 +121,7 @@ void printTimeDiv(float timeDiv) {
 
     tft.fillRect(115, 3, 110, 45, TFT_CHARCOAL);
 
-    snprintf(timeDivStr, sizeof(timeDivStr), "%.3f ms/div", timeDiv);
+    snprintf(timeDivStr, sizeof(timeDivStr), "%.4f ms/div", timeDiv);
     tft.setTextColor(TFT_WHITE, TFT_CHARCOAL);
     tft.setCursor(120, 20, 2);
     tft.print(timeDivStr);

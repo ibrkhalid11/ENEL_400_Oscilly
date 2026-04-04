@@ -8,7 +8,7 @@ uint8_t measurement = 0;
 uint8_t voltDivIndex = 0;
 uint8_t timeDivIndex = 0;
 float voltDivModes[] = {5, 1, 0.5, 0.1};
-float timeDivModes[] = {500, 100, 50, 10, 5, 1, 0.5, 0.1, 0.05, 0.01, 0.005, 0.001};
+float timeDivModes[] = {500, 100, 50, 10, 5, 1, 0.5, 0.1, 0.05, 0.01, 0.005, 0.001, 0.0005, 0.0001};
 
 QueueHandle_t uartQueue;
 SemaphoreHandle_t displayMutex;
@@ -31,6 +31,7 @@ float pkToPk = 0;
 
 uint8_t dataReadyFlag = 0;
 uint8_t rxReadyFlag = 1;
+uint8_t captureFlag = 0;
 volatile uint8_t currentMode = 0;
 uint8_t fpgaSetting = 0;
 
@@ -131,6 +132,20 @@ void encoderVoltTask(void * parameters) {
             }
         }
 
+        if (voltEn.btnFlag) {
+            if (millis() - voltEn.btnTimestamp >= DEBOUNCE_TIME) {
+
+                currentMode = currentMode ? 0 : 1;
+
+                fpgaSetting = timeDivIndex << 1;
+                fpgaSetting |= currentMode;
+                fpga.write(fpgaSetting);
+
+                voltEn.btnFlag = 0;
+
+            }
+        }
+
         vTaskDelay(pdTICKS_TO_MS(50));
 
     }
@@ -144,7 +159,7 @@ void encoderTimeTask(void * parameters) {
                 if(xSemaphoreTake(displayMutex, 0) == pdTRUE) {
 
                     if (timeEn.s2State) {
-                        if (timeDivIndex >= 11);
+                        if (timeDivIndex >= 13);
                         else timeDivIndex++;
                     } else {
                         if (timeDivIndex <= 0);
@@ -201,12 +216,7 @@ void encoderMeasTask(void * parameters) {
         if (measEn.btnFlag) {
             if (millis() - measEn.btnTimestamp >= DEBOUNCE_TIME) {
 
-                currentMode = currentMode ? 0 : 1;
-
-                fpgaSetting = timeDivIndex << 1;
-                fpgaSetting |= currentMode;
-                fpga.write(fpgaSetting);
-
+                captureFlag = captureFlag ? 0 : 1;
                 measEn.btnFlag = 0;
 
             }
@@ -221,6 +231,7 @@ void uartTask (void * parameters) {
     while(1) {
         if (!dataReadyFlag) {
             if (fpga.available() >= 968) {
+
                 digitalWrite(MCU_READY, 0);
                 fpga.readBytes(voltUnion.receivedArray, 960);
                 fpga.readBytes(perUnion.receivedArray, 2);
@@ -235,34 +246,37 @@ void uartTask (void * parameters) {
             }
         }
 
-        vTaskDelay(pdMS_TO_TICKS(50));
+        vTaskDelay(pdMS_TO_TICKS(1));
 
     }
 }
 
 void waveformUpdateTask(void * parameters) {
     while(1) {
-        if (dataReadyFlag) {
-            if ((xSemaphoreTake(displayMutex, 0) == pdTRUE) && (xSemaphoreTake(measMutex, 0) == pdTRUE)) {
+        if (dataReadyFlag && !captureFlag) {
+            if (xSemaphoreTake(displayMutex, 0) == pdTRUE) {
+                if (xSemaphoreTake(measMutex, 0) == pdTRUE) {
 
-                per = convertVoltage(perUnion.measurement);
-                freq = (float) 1 / per;
-                vMax = convertVoltage(vMaxUnion.measurement);
-                vMin = convertVoltage(vMinUnion.measurement);
-                pkToPk = convertVoltage(pkToPkUnion.measurement);
-                amp = pkToPk / 2;
+                    per = convertVoltage(perUnion.measurement);
+                    freq = (float) 1 / per;
+                    vMax = convertVoltage(vMaxUnion.measurement);
+                    vMin = convertVoltage(vMinUnion.measurement);
+                    pkToPk = convertVoltage(pkToPkUnion.measurement);
+                    amp = pkToPk / 2;
 
-                drawWave(voltDivIndex, voltUnion.voltData);
+                    drawWave(voltDivIndex, voltUnion.voltData);
 
-                if (measurement == 0) printFreqPer(freq, per);
-                else if (measurement == 1) printMaxMin(vMax, vMin);
-                else if (measurement == 2) printAmpPk(amp, pkToPk);
+                    if (measurement == 0) printFreqPer(freq, per);
+                    else if (measurement == 1) printMaxMin(vMax, vMin);
+                    else if (measurement == 2) printAmpPk(amp, pkToPk);
 
-                dataReadyFlag = 0;
-                digitalWrite(MCU_READY, 1);
+                    dataReadyFlag = 0;
+                    digitalWrite(MCU_READY, 1);
+                    
+                    xSemaphoreGive(measMutex);
+                }
+                
                 xSemaphoreGive(displayMutex);
-                xSemaphoreGive(measMutex);
-
             }
 
         }
