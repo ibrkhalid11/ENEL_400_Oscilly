@@ -243,18 +243,24 @@ module toplevelMVP(
     logic [15:0] async_scaled_data, async_averaged_data;
     logic        async_ready_pulse;
     
-    xadc_processing #(
-        .SCALING_FACTOR(2500),
-        .SHIFT_FACTOR(14)
-    ) ASYNC_ADC_PROC (
-        .clk(clk),
-        .reset(reset),
-        .ready(~fifo_empty),
-        .data({ext_adc_data, 6'b0}),
-        .averaged_data(async_averaged_data),
-        .scaled_adc_data(async_scaled_data),
-        .ready_pulse(async_ready_pulse)
-    );
+    /* ======== ASYNC ADC - direct scale, no averaging ======= */
+    /* ======== ASYNC ADC - direct scale, no averaging ======= */
+    logic [28:0] async_scale_tmp;
+    logic        async_valid_p1, async_valid_p2;
+
+    always_ff @(posedge clk) begin
+        if (reset) begin
+            async_scale_tmp   <= '0;
+            async_scaled_data <= '0;
+            async_valid_p1    <= 1'b0;
+            async_valid_p2    <= 1'b0;
+        end else begin
+            async_valid_p1    <= ~fifo_empty;
+            async_valid_p2    <= async_valid_p1;
+            async_scale_tmp   <= {ext_adc_data, 6'b0} * 2500;
+            async_scaled_data <= async_scale_tmp[28:14];
+        end
+    end
     
     logic [15:0] decimated_data;
     logic        decim_valid;
@@ -266,7 +272,7 @@ module toplevelMVP(
         .reset(reset),
         .timescale_in(timescale_set),
         .adc_data(async_scaled_data),
-        .adc_data_valid(~fifo_empty),
+        .adc_data_valid(async_valid_p2),    // was ~fifo_empty
         .sample_out(decimated_data),
         .sample_valid(decim_valid)        
     );

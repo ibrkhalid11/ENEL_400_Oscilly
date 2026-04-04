@@ -60,21 +60,21 @@ module decimation #(
     // };
     /* based off 60MSPS*/
     localparam clk_ratio_t CLK_LUT = '{
-        30_000_000,  //  0:  2 Hz
-         6_000_000,  //  1: 10 Hz
-         3_000_000,  //  2: 20 Hz
-           600_000,  //  3: 100 Hz
-           300_000,  //  4: 200 Hz
-            60_000,  //  5: 1 KHz
-             6_000,  //  6: 10 KHz
-             3_000,  //  7: 20 KHz
-               600,  //  8: 100 KHz
-               300,  //  9: 200 KHz
-                60,  // 10: 1 MHz
-                30,  // 11: 2 MHz
-                 6,  // 12: 10 MHz
-                 3,  // 13: 20 MHz
-                 1   // 14: 60 MHz (passthrough)
+           500_000,  //  0: 500    ms/div
+           100_000,  //  1: 100    ms/div
+            50_000,  //  2:  50    ms/div
+            10_000,  //  3:  10    ms/div
+             5_000,  //  4:   5    ms/div
+             1_000,  //  5:   1    ms/div
+               500,  //  6:   0.5  ms/div
+               100,  //  7:   0.1  ms/div
+                50,  //  8:   0.05 ms/div
+                10,  //  9:   0.01 ms/div
+                 5,  // 10:   0.005 ms/div
+                 2,  // 11:   0.001 ms/div
+                 1,  // 12:   0.0005 ms/div (hardware limit)
+                 1,  // 13:   same
+                 1   // 14:   same
     };
     logic [3:0] timescale_prev;
     int unsigned decim_ratio;

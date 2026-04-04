@@ -21,20 +21,39 @@ module ram_buffer #(
     input logic [WIDTH-1:0]       vpp,
     input logic [DEPTH_ADDR-1:0]  period_count
 );
-    typedef int unsigned depth_sel_t [7];
+    typedef int unsigned depth_sel_t [15];
     localparam depth_sel_t DEPTH_LUT = '{
-        DEPTH, 
-        DEPTH,
-        DEPTH,
-        DEPTH,
-        DEPTH,
-        DEPTH,
-        DEPTH
-    }; 
+        480,  //  0: 500    ms/div
+        480,  //  1: 100    ms/div
+        480,  //  2:  50    ms/div
+        480,  //  3:  10    ms/div
+        480,  //  4:   5    ms/div
+        480,  //  5:   1    ms/div
+        480,  //  6:   0.5  ms/div
+        480,  //  7:   0.1  ms/div
+        480,  //  8:   0.05 ms/div
+        480,  //  9:   0.01 ms/div
+        480,  // 10:   0.005 ms/div
+        480,  // 11:   0.001 ms/div
+        240,  // 12:   2x zoom
+        120,  // 13:   4x zoom
+         60   // 14:   8x zoom
+    };
+
+    typedef int unsigned repeat_sel_t [15];
+    localparam repeat_sel_t REPEAT_LUT = '{
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        2,    // 12: 240 samples × 2 = 480
+        4,    // 13: 120 samples × 4 = 480
+        8     // 14:  60 samples × 8 = 480
+    };
+    logic [23:0] wait_counter;
     logic [WIDTH - 1 : 0] ram [0 : DEPTH - 1];
     logic [DEPTH_ADDR - 1 : 0] waddr;
     logic [DEPTH_ADDR - 1 : 0] raddr;
     int unsigned capture_depth;
+    int unsigned repeat_factor;
+    logic [3:0]  repeat_cnt;
 
     // latched calc values
     logic [WIDTH-1:0] lat_vmax, lat_vmin, lat_vpp;
@@ -45,7 +64,8 @@ module ram_buffer #(
         IDLE,
         CAPTURE,
         READOUT,
-        APPEND
+        APPEND,
+        WAIT_ACK
     } state_t;
     state_t state;
 
@@ -66,25 +86,30 @@ module ram_buffer #(
 
     always_ff @(posedge clk) begin
         if (reset) begin
-            state        <= IDLE;
-            waddr        <= '0;
-            raddr        <= '0;
-            uart_data    <= '0;
-            uart_valid   <= '0;
+            state         <= IDLE;
+            waddr         <= '0;
+            raddr         <= '0;
+            uart_data     <= '0;
+            uart_valid    <= '0;
+            wait_counter  <= '0;
             capture_depth <= DEPTH;
-            lat_vmax     <= '0;
-            lat_vmin     <= '0;
-            lat_vpp      <= '0;
-            lat_period   <= '0;
-            append_idx   <= '0;
+            repeat_factor <= 1;
+            repeat_cnt    <= '0;
+            lat_vmax      <= '0;
+            lat_vmin      <= '0;
+            lat_vpp       <= '0;
+            lat_period    <= '0;
+            append_idx    <= '0;
         end else begin
             uart_valid <= 1'b0;
             case (state)
                 IDLE: begin
-                    waddr <= '0;
-                    raddr <= '0;
+                    waddr      <= '0;
+                    raddr      <= '0;
+                    repeat_cnt <= '0;
                     if (trigger) begin
                         capture_depth <= DEPTH_LUT[timescale_in];
+                        repeat_factor <= REPEAT_LUT[timescale_in];
                         state <= CAPTURE;
                     end
                 end
@@ -97,6 +122,7 @@ module ram_buffer #(
                             lat_vpp    <= vpp;
                             lat_period <= {{(WIDTH - DEPTH_ADDR){1'b0}}, period_count};
                             append_idx <= '0;
+                            repeat_cnt <= '0;
                             state      <= READOUT;
                         end else begin
                             waddr <= waddr + 1;
@@ -107,12 +133,20 @@ module ram_buffer #(
                     if (uart_ready) begin
                         uart_data  <= ram[raddr];
                         uart_valid <= 1'b1;
-                        if (raddr == capture_depth - 1) begin
-                            raddr      <= '0;
-                            append_idx <= '0;
-                            state      <= APPEND;
+
+                        if (repeat_cnt == repeat_factor - 1) begin
+                            /* Last repeat of this sample - advance to next */
+                            repeat_cnt <= '0;
+                            if (raddr == capture_depth - 1) begin
+                                raddr      <= '0;
+                                append_idx <= '0;
+                                state      <= APPEND;
+                            end else begin
+                                raddr <= raddr + 1;
+                            end
                         end else begin
-                            raddr <= raddr + 1;
+                            /* Same sample again */
+                            repeat_cnt <= repeat_cnt + 1;
                         end
                     end
                 end
@@ -126,9 +160,16 @@ module ram_buffer #(
                             2'd3: uart_data <= lat_vpp;
                         endcase
                         if (append_idx == 2'd3)
-                            state <= IDLE;
+                            state <= WAIT_ACK;
                         else
                             append_idx <= append_idx + 1;
+                    end
+                end
+                WAIT_ACK: begin
+                    wait_counter <= wait_counter + 1;
+                    if (wait_counter >= 24'd10_000_000) begin
+                        wait_counter <= 0;
+                        state <= IDLE;
                     end
                 end
             endcase
