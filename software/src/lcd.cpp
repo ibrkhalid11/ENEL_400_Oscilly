@@ -36,7 +36,7 @@ void lcdInit() {
     drawGrid();
 
     printVoltDiv(5);
-    printTimeDiv(500);
+    printTimeDiv(0, 500);
 
     printFreqPer(0, 0);
 
@@ -117,11 +117,22 @@ void printVoltDiv(float voltDiv) {
 
 }
 
-void printTimeDiv(float timeDiv) {
+void printTimeDiv(int timeDivIndex, float timeDiv) {
+
+    float newTimeDiv;
 
     tft.fillRect(115, 3, 110, 45, TFT_CHARCOAL);
 
-    snprintf(timeDivStr, sizeof(timeDivStr), "%.4f ms/div", timeDiv);
+    if (timeDivIndex <= 5) {
+        snprintf(timeDivStr, sizeof(timeDivStr), "%.0f ms/div", timeDiv);
+    } else if (timeDivIndex <= 11) {
+        newTimeDiv = timeDiv * 1000;
+        snprintf(timeDivStr, sizeof(timeDivStr), "%.0f us/div", newTimeDiv);
+    } else {
+        newTimeDiv = timeDiv * 1000000;
+        snprintf(timeDivStr, sizeof(timeDivStr), "%.0f ns/div", newTimeDiv);
+    }
+
     tft.setTextColor(TFT_WHITE, TFT_CHARCOAL);
     tft.setCursor(120, 20, 2);
     tft.print(timeDivStr);

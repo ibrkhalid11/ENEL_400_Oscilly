@@ -22,7 +22,8 @@ void pinInit() {
     pinMode(MCU_READY, OUTPUT);
     digitalWrite(MCU_READY, 1);
 
-    pinMode(FPGA_READY, INPUT);
+    pinMode(FPGA_READY, OUTPUT);
+    digitalWrite(FPGA_READY, 1);
 
     attachInterrupt(KEY_VOLT, btnVoltISR, RISING);
     // attachInterrupt(KEY_TIME, btnTimeISR, RISING);

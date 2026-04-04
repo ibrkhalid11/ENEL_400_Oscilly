@@ -15,7 +15,7 @@ void drawGrid();
 void drawHeader();
 void drawGridLines();
 void printVoltDiv(float voltDiv);
-void printTimeDiv(float timeDiv);
+void printTimeDiv(int timeDivIndex, float timeDiv);
 void printFreqPer(float freq, float per);
 void printMaxMin(float max, float min);
 void printAmpPk(float amp, float pk);

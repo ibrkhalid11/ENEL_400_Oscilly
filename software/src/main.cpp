@@ -8,7 +8,7 @@ uint8_t measurement = 0;
 uint8_t voltDivIndex = 0;
 uint8_t timeDivIndex = 0;
 float voltDivModes[] = {5, 1, 0.5, 0.1};
-float timeDivModes[] = {500, 100, 50, 10, 5, 1, 0.5, 0.1, 0.05, 0.01, 0.005, 0.001, 0.0005, 0.0001};
+float timeDivModes[] = {500, 100, 50, 10, 5, 1, 0.5, 0.1, 0.05, 0.01, 0.005, 0.001, 0.0005, 0.00025, 0.000125};
 
 QueueHandle_t uartQueue;
 SemaphoreHandle_t displayMutex;
@@ -38,13 +38,14 @@ uint8_t fpgaSetting = 0;
 HardwareSerial fpga(2);
 
 void setup() {
-
+    
     fpga.setRxBufferSize(1024);
     fpga.begin(115200, SERIAL_8N1, 13, 12, false, 4096);
     fpga.setTimeout(0);
     Serial.begin(9600);
     lcdInit();
     pinInit();
+    digitalWrite(FPGA_READY, 0);
 
     uartQueue = xQueueCreate(5, sizeof(float));
     displayMutex = xSemaphoreCreateMutex();
@@ -159,14 +160,14 @@ void encoderTimeTask(void * parameters) {
                 if(xSemaphoreTake(displayMutex, 0) == pdTRUE) {
 
                     if (timeEn.s2State) {
-                        if (timeDivIndex >= 13);
+                        if (timeDivIndex >= 14);
                         else timeDivIndex++;
                     } else {
                         if (timeDivIndex <= 0);
                         else timeDivIndex--;
                     }
 
-                    printTimeDiv(timeDivModes[timeDivIndex]);
+                    printTimeDiv(timeDivIndex, timeDivModes[timeDivIndex]);
 
                     fpgaSetting = timeDivIndex << 1;
                     fpgaSetting |= currentMode;
