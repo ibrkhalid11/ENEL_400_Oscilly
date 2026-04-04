@@ -190,25 +190,27 @@ void encoderMeasTask(void * parameters) {
         if(measEn.enFlag) {
             if (millis() - measEn.enTimestamp >= DEBOUNCE_TIME) {
 
-                if ((xSemaphoreTake(displayMutex, 0) == pdTRUE) && (xSemaphoreTake(measMutex, 0) == pdTRUE)) {
+                if (xSemaphoreTake(displayMutex, 0) == pdTRUE) {
+                    if (xSemaphoreTake(measMutex, 0) == pdTRUE) {
 
-                    if (measEn.s2State) {
-                        if (measurement >= 2) measurement = 0;
-                        else measurement++;
-                    } else {
-                        if (measurement <= 0) measurement = 2;
-                        else measurement--;
+                        if (measEn.s2State) {
+                            if (measurement >= 2) measurement = 0;
+                            else measurement++;
+                        } else {
+                            if (measurement <= 0) measurement = 2;
+                            else measurement--;
+                        }
+
+                        if (measurement == 0) printFreqPer(freq, per);
+                        else if (measurement == 1) printMaxMin(vMax, vMin);
+                        else if (measurement == 2) printAmpPk(amp, pkToPk);
+
+                        measEn.enFlag = 0;
+
+                        xSemaphoreGive(measMutex);
                     }
-
-                    if (measurement == 0) printFreqPer(freq, per);
-                    else if (measurement == 1) printMaxMin(vMax, vMin);
-                    else if (measurement == 2) printAmpPk(amp, pkToPk);
-
-                    measEn.enFlag = 0;
-
+                    
                     xSemaphoreGive(displayMutex);
-                    xSemaphoreGive(measMutex);
-
                 }
             }
         }
@@ -245,7 +247,6 @@ void uartTask (void * parameters) {
 
             }
         }
-
         vTaskDelay(pdMS_TO_TICKS(1));
 
     }
@@ -281,7 +282,7 @@ void waveformUpdateTask(void * parameters) {
 
         }
 
-        vTaskDelay(pdMS_TO_TICKS(500));
+        vTaskDelay(pdMS_TO_TICKS(100));
 
     }
 }
