@@ -206,7 +206,7 @@ float convertVoltage(uint16_t rawVoltage) {
     if (currentMode) {
         scaledVoltage = (((float)rawVoltage / 1000) - 5);
     } else {
-        scaledVoltage = (((float)rawVoltage - 6600) / 1636);
+        scaledVoltage = (((float)rawVoltage - 865) / 911);
     }
     return scaledVoltage; 
 }
