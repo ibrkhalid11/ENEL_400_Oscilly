@@ -14,6 +14,11 @@ typedef union {
     uint16_t voltData[480];
     uint8_t receivedArray[960];
 } voltageUnion;
+
+typedef struct {
+    float vMax;
+    float vMin;
+} voltageMeasurements;
   
 
 #endif

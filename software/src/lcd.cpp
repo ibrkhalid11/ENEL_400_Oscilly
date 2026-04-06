@@ -171,7 +171,7 @@ void printAmpPk(float amp, float pk) {
 
 }
 
-void drawWave(uint8_t voltScale, uint16_t * voltData) {
+voltageMeasurements drawWave(uint8_t voltScale, uint16_t * voltData) {
     drawGrid();
     uint16_t pixPerVolt = 0;
     uint16_t waveColour = currentMode ? TFT_YELLOW : TFT_CYAN;
@@ -181,20 +181,35 @@ void drawWave(uint8_t voltScale, uint16_t * voltData) {
     else if (voltScale == 2) pixPerVolt = 60;
     else if (voltScale == 3) pixPerVolt = 300;
 
+    voltageMeasurements returnData = {0, 0};
+
     for (uint16_t i = 0; i < 480; i++) {
         
         if (i > 0) {
 
-            float y = gridHorizontal - (convertVoltage(voltData[i]) * pixPerVolt);
+            float convertedVoltage = convertVoltage(voltData[i]);
+
+            if ((i > 10 && i < 230) || (i > 250 && i < 470 )) {
+                if (convertedVoltage < returnData.vMin) returnData.vMin = convertedVoltage;
+                else if (convertedVoltage > returnData.vMax) returnData.vMax = convertedVoltage;
+            }
+
+            float y = gridHorizontal - (convertedVoltage * pixPerVolt);
             float lastY = gridHorizontal - (convertVoltage(voltData[i - 1]) * pixPerVolt);
 
             if ((y > HEADER_HEIGHT) && (lastY > HEADER_HEIGHT)) tft.drawWideLine(i - 1, lastY, i, y, 3, waveColour, waveColour);
 
         } else {
-            float y = gridHorizontal - (convertVoltage(voltData[i]) * pixPerVolt);
+            float convertedVoltage = convertVoltage(voltData[i]);
+            returnData.vMax = convertedVoltage;
+            returnData.vMin = convertedVoltage;
+
+            float y = gridHorizontal - (convertedVoltage * pixPerVolt);
             if ((y > HEADER_HEIGHT) && (y < SCREEN_HEIGHT)) tft.drawSpot(i, y, 1, waveColour, waveColour);
         }
     }
+
+    return returnData;
 
     
 }

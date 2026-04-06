@@ -21,6 +21,8 @@ measurementUnion vMaxUnion;
 measurementUnion vMinUnion;
 measurementUnion pkToPkUnion;
 
+voltageMeasurements vMeasurements = {0, 0};
+
 float voltData[480];
 float freq = 0;
 float per = 0;
@@ -259,14 +261,14 @@ void waveformUpdateTask(void * parameters) {
             if (xSemaphoreTake(displayMutex, 0) == pdTRUE) {
                 if (xSemaphoreTake(measMutex, 0) == pdTRUE) {
 
-                    per = convertVoltage(perUnion.measurement);
-                    freq = (float) 1 / per;
-                    vMax = convertVoltage(vMaxUnion.measurement);
-                    vMin = convertVoltage(vMinUnion.measurement);
-                    pkToPk = convertVoltage(pkToPkUnion.measurement);
-                    amp = pkToPk / 2;
+                    vMeasurements = drawWave(voltDivIndex, voltUnion.voltData);
 
-                    drawWave(voltDivIndex, voltUnion.voltData);
+                    per = perUnion.measurement;
+                    freq = (float) 1 / per;
+                    vMax = vMeasurements.vMax;
+                    vMin = vMeasurements.vMin;
+                    pkToPk = vMax - vMin;
+                    amp = pkToPk / 2;
 
                     if (measurement == 0) printFreqPer(freq, per);
                     else if (measurement == 1) printMaxMin(vMax, vMin);
